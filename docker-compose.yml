@@ -8,8 +8,13 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    volumes:
+      - sermon_data:/app/data
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  sermon_data:

@@ -7,3 +7,5 @@ python-docx
 pymupdf
 pydantic
 reportlab
+authlib
+itsdangerous

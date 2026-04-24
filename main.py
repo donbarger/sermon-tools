@@ -13,19 +13,23 @@ from typing import Optional
 from datetime import datetime
 
 import httpx
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import StreamingResponse, HTMLResponse, Response
+from fastapi.responses import StreamingResponse, HTMLResponse, Response, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
 load_dotenv()
 
+import db
+import auth
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Sermon Tools")
+db.init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -295,65 +299,231 @@ async def evaluate_sermon(
     return await stream_openrouter(EVALUATE_SYSTEM_PROMPT, f"Please evaluate this sermon:\n\n{text}")
 
 
+# ─── Research Steps ──────────────────────────────────────────────────────────
+
+RESEARCH_STEP_BASE = """You are a biblical research assistant for evangelical Christian pastors. You hold to core evangelical convictions: biblical inerrancy, salvation by grace alone through faith alone in Christ alone, the Trinity, the deity and resurrection of Jesus Christ, and the necessity of personal repentance and faith.
+
+Be thorough, scholarly but accessible. Format with clear markdown headings. Focus only on the step described below — do not try to cover other areas."""
+
+RESEARCH_STEPS = [
+    {
+        "number": 1,
+        "title": "Historical & Cultural Context",
+        "instruction": "Research the Historical & Cultural Context of this passage only. Cover: Who wrote it, to whom, when, and why. What historical events shaped it. What the original audience would have understood. Relevant geography, politics, Jewish customs, or Greco-Roman context. Keep your focus here — not on word study or application.",
+    },
+    {
+        "number": 2,
+        "title": "Text Exegesis",
+        "instruction": "Perform Text Exegesis on this passage only. Cover: Verse-by-verse analysis. Key Hebrew/Greek terms and their meaning. Grammatical observations that affect interpretation. How the text's structure shapes its meaning. Any significant textual notes. Keep your focus here — not on background or application.",
+    },
+    {
+        "number": 3,
+        "title": "Cross-References & Biblical Connections",
+        "instruction": "Research Cross-References and Biblical Connections for this passage only. Cover: Parallel passages in Scripture. Old Testament connections or allusions. How this text fits the biblical-theological storyline (Creation → Fall → Redemption → New Creation). Key canonical themes it develops. Keep your focus here — not on history or application.",
+    },
+    {
+        "number": 4,
+        "title": "Theological Themes",
+        "instruction": "Identify the Theological Themes of this passage only. Cover: Major doctrinal threads (God's character, humanity, salvation, Christology, eschatology, etc.). How this text contributes to systematic theology. Any tensions or nuances that need careful handling. Heresies or errors this passage addresses or guards against. Keep your focus here — not on application or preaching.",
+    },
+    {
+        "number": 5,
+        "title": "Application & Sermon Angles",
+        "instruction": "Develop Application and Sermon Angles from this passage only. Cover: How this text speaks to a contemporary congregation. Specific application points (transformational, behavioral, attitudinal). 2-3 different sermon angle options (narrative, topical, expository). Illustration angles or contemporary connections. A suggested sermon outline structure. Keep your focus here — practical and preachable.",
+    },
+]
+
+STEP_MAP = {s["number"]: s for s in RESEARCH_STEPS}
+
+
+class ResearchStepRequest(BaseModel):
+    step: int
+    passage: str
+    topic: Optional[str] = None
+    notes: Optional[str] = None
+    prior_steps: Optional[str] = None
+
+
+@app.post("/api/research/step")
+async def research_step(request: ResearchStepRequest):
+    if not request.passage.strip():
+        raise HTTPException(status_code=400, detail="Scripture passage is required")
+    step_def = STEP_MAP.get(request.step)
+    if not step_def:
+        raise HTTPException(status_code=400, detail="Step must be 1–5")
+
+    system = f"{RESEARCH_STEP_BASE}\n\nYOUR TASK FOR THIS STEP:\n{step_def['instruction']}"
+
+    msg = f"Passage: {request.passage}"
+    if request.topic:
+        msg += f"\nTopic focus: {request.topic}"
+    if request.notes:
+        msg += f"\nAdditional context: {request.notes}"
+    if request.prior_steps:
+        msg += f"\n\nFor context, here is what has been researched in prior steps:\n{request.prior_steps}"
+    msg += f"\n\nNow complete Step {request.step}: {step_def['title']}."
+
+    return await stream_openrouter(system, msg)
+
+
+# ─── Auth Routes ──────────────────────────────────────────────────────────────
+
+@app.get("/api/auth/google")
+async def google_login(response: Response):
+    url, state = auth.build_authorize_url()
+    redirect = RedirectResponse(url=url)
+    redirect.set_cookie(
+        auth.OAUTH_STATE_COOKIE, state,
+        max_age=600, httponly=True, secure=auth.COOKIE_SECURE, samesite="lax"
+    )
+    return redirect
+
+
+@app.get("/api/auth/google/callback")
+async def google_callback(request: Request, code: str = "", state: str = "", error: str = ""):
+    if error:
+        return RedirectResponse("/?auth=error")
+    saved_state = request.cookies.get(auth.OAUTH_STATE_COOKIE)
+    if not saved_state or saved_state != state:
+        return RedirectResponse("/?auth=error")
+    try:
+        userinfo = await auth.exchange_code_for_userinfo(code)
+    except Exception as e:
+        logger.error(f"OAuth exchange failed: {e}")
+        return RedirectResponse("/?auth=error")
+    user = db.get_or_create_user(
+        google_id=userinfo["sub"],
+        email=userinfo.get("email", ""),
+        name=userinfo.get("name", ""),
+        picture=userinfo.get("picture", ""),
+    )
+    token = auth.issue_session(user["id"])
+    redirect = RedirectResponse("/?auth=ok")
+    redirect.set_cookie(
+        auth.SESSION_COOKIE, token,
+        max_age=auth.COOKIE_MAX_AGE, httponly=True,
+        secure=auth.COOKIE_SECURE, samesite="lax"
+    )
+    redirect.delete_cookie(auth.OAUTH_STATE_COOKIE)
+    return redirect
+
+
+@app.get("/api/auth/me")
+async def get_me(request: Request):
+    uid = auth.get_optional_user_id(request)
+    if not uid:
+        return {"user": None}
+    user = db.get_user(uid)
+    if not user:
+        return {"user": None}
+    return {"user": {"id": user["id"], "name": user["name"], "email": user["email"], "picture": user["picture"]}}
+
+
+@app.post("/api/auth/logout")
+async def logout(response: Response):
+    response.delete_cookie(auth.SESSION_COOKIE)
+    return {"ok": True}
+
+
+# ─── Sermon Save/Load Routes ──────────────────────────────────────────────────
+
+class SaveSermonRequest(BaseModel):
+    title: Optional[str] = None
+    passage: str
+    topic: Optional[str] = None
+    research: Optional[str] = None
+    steps: Optional[list] = None
+
+
+@app.get("/api/sermons")
+async def list_sermons(request: Request):
+    uid = auth.require_user_id(request)
+    return db.list_sermons(uid)
+
+
+@app.post("/api/sermons")
+async def save_sermon(request: Request, body: SaveSermonRequest):
+    uid = auth.require_user_id(request)
+    title = body.title or (f"{body.passage} Research" if body.passage else "Untitled")
+    sermon_id = db.save_sermon(
+        user_id=uid,
+        title=title,
+        passage=body.passage or "",
+        topic=body.topic or "",
+        research=body.research or "",
+        steps=body.steps or [],
+    )
+    return {"id": sermon_id, "ok": True}
+
+
+@app.get("/api/sermons/{sermon_id}")
+async def get_sermon(request: Request, sermon_id: int):
+    uid = auth.require_user_id(request)
+    sermon = db.get_sermon(sermon_id, uid)
+    if not sermon:
+        raise HTTPException(404, "Sermon not found")
+    return sermon
+
+
 # ─── Sermon Styles Config ─────────────────────────────────────────────────────
 
 SERMON_STYLES = {
     "expository-hb-charles": {
-        "name": "Expository (Structured & Text-Driven) — H.B. Charles Jr.",
+        "name": "Expository (Structured & Text-Driven)",
         "structure": "Text-driven, verse-by-verse. Each main point emerges directly from the passage. The text sets the agenda — not the preacher.",
         "style": "Structured and disciplined with crisp, clear transitions. Concise phrasing. Precision in handling the text. No excess — every word serves the passage.",
         "delivery": "The congregation should leave with a clear, ordered understanding of what the text says, what it means, and what it requires of them.",
     },
     "big-idea-tony-evans": {
-        "name": "Big Idea (Clear & Authoritative) — Tony Evans",
+        "name": "Big Idea (Clear & Authoritative)",
         "structure": "A single dominant idea governs everything. Every point, illustration, and application flows from and returns to that one big idea.",
         "style": "Authoritative and theologically grounded. Culturally engaged — connects biblical truth directly to contemporary life. Confident, declarative tone.",
         "delivery": "The congregation should leave able to state the sermon's one big idea in a single sentence — and feel the weight of it.",
     },
     "narrative-terry-anderson": {
-        "name": "Narrative (Story-Driven & Dynamic) — Terry Anderson",
+        "name": "Narrative (Story-Driven & Dynamic)",
         "structure": "A full narrative arc: setup → rising tension → climax → resolution. Let the story unfold progressively. Delay the full meaning.",
         "style": "Dynamic pacing with rhythmic phrasing. Build emotional intensity across the sermon. Vivid language and strong sensory detail. Celebratory climax.",
         "delivery": "The congregation should feel like they lived inside the story — not just heard it explained.",
     },
     "inductive-robert-smith": {
-        "name": "Inductive (Experiential Discovery) — Robert Smith Jr.",
+        "name": "Inductive (Experiential Discovery)",
         "structure": "Open with tension or a probing question. Withhold resolution. Let the text lead the congregation to discover truth rather than announcing it upfront.",
         "style": "Experiential and imaginative. Embodied storytelling — the preacher inhabits the text. Rich with metaphor, imagery, and incarnational language.",
         "delivery": "The congregation should feel like they discovered the truth themselves — which makes it impossible to forget.",
     },
     "expository-ralph-west": {
-        "name": "Expository (Deep & Pastoral) — Ralph West",
+        "name": "Expository (Deep & Pastoral)",
         "structure": "Text-driven with layered theological insight. Points unfold with pastoral patience. Depth without rushing. Space for the congregation to sit in the text.",
         "style": "Pastoral, rich, and reflective. Shepherding tone — the preacher cares deeply for the people as they preach. Warm and substantive.",
         "delivery": "The congregation should feel spiritually fed, pastorally cared for, and theologically enriched.",
     },
     "problem-solution-tony-evans": {
-        "name": "Problem–Solution (Practical & Direct) — Tony Evans",
+        "name": "Problem–Solution (Practical & Direct)",
         "structure": "Clearly name the problem the congregation faces. Then unfold the biblical solution with precision. Move from diagnosis to prescription.",
         "style": "Direct and culturally aware. No hedging. Authoritative confidence that Scripture has the answer. Practical, actionable application.",
         "delivery": "The congregation should leave with a clear understanding of both their problem and God's specific solution — and know what to do about it.",
     },
     "homiletical-plot-terry-anderson": {
-        "name": "Homiletical Plot (Journey to Celebration) — Terry Anderson",
+        "name": "Homiletical Plot (Journey to Celebration)",
         "structure": "Eugene Lowry's plot: Conflict → Complication → Clue → Gospel Turn → Resolution. Build toward a climactic Gospel moment.",
         "style": "Narrative movement with emotional escalation. Strong suspense through the middle. The Gospel turn arrives like a resolution the congregation has been aching for.",
         "delivery": "The congregation should experience a journey — conflict, tension, Gospel relief, and joyful celebration at the finish.",
     },
     "topical-hb-charles": {
-        "name": "Topical (Organized & Focused) — H.B. Charles Jr.",
+        "name": "Topical (Organized & Focused)",
         "structure": "Multiple texts organized around a central topic or theme. Each point is anchored in Scripture. The topic shapes the structure; Scripture shapes each point.",
         "style": "Methodical and clearly organized. Disciplined movement between texts. No rambling. Clean outline with logical flow.",
         "delivery": "The congregation should leave with a comprehensive, biblically grounded understanding of the topic — organized well enough to teach others.",
     },
     "narrative-ralph-west": {
-        "name": "Narrative (Reflective & Pastoral) — Ralph West",
+        "name": "Narrative (Reflective & Pastoral)",
         "structure": "Story-centered with pastoral pacing. The narrative arc is present but unhurried. Space for reflection within the story.",
         "style": "Pastoral warmth with reflective depth. Slower pacing to let truth settle. Relational tone — the preacher walks alongside the congregation through the story.",
         "delivery": "The congregation should feel the pastoral care embedded in the storytelling — moved emotionally, nourished spiritually.",
     },
     "big-idea-robert-smith": {
-        "name": "Big Idea (Experiential & Imaginative) — Robert Smith Jr.",
+        "name": "Big Idea (Experiential & Imaginative)",
         "structure": "A single governing idea explored with depth and imagination. Uses the whole canon to illuminate the central truth.",
         "style": "Experiential and imaginative. Incarnational — the truth takes on flesh in language and story. Rich imagery. The idea is felt as much as understood.",
         "delivery": "The congregation should not only understand the big idea — they should have experienced it. It should live in them, not just in their notes.",

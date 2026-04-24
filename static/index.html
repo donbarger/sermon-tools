@@ -39,6 +39,9 @@
           <span class="app-tagline">AI-Assisted Biblical Research &amp; Preparation</span>
         </div>
       </div>
+      <div id="auth-area" class="auth-area">
+        <!-- populated by JS -->
+      </div>
     </div>
   </header>
 
@@ -52,6 +55,9 @@
       </button>
       <button class="tab-btn" data-tab="evaluate" onclick="switchTab('evaluate')">
         <span class="tab-icon">🔍</span> Evaluate
+      </button>
+      <button class="tab-btn" data-tab="sermons" id="tab-btn-sermons" onclick="switchTab('sermons')" style="display:none">
+        <span class="tab-icon">📂</span> My Sermons
       </button>
     </div>
   </nav>
@@ -89,24 +95,59 @@
         </div>
 
         <div class="panel-output">
-          <div class="output-header">
-            <span class="output-label">Research Results</span>
+          <!-- Step progress indicator -->
+          <div class="step-progress" id="step-progress" style="display:none">
+            <div class="step-dots" id="step-dots"></div>
+            <div class="step-label" id="step-label"></div>
+          </div>
+
+          <div class="output-header" id="research-output-header">
+            <span class="output-label" id="research-output-label">Research Results</span>
             <div class="output-actions" id="research-actions" style="display:none">
-              <button class="btn-ghost" onclick="copyOutput('research-output', 'research-actions-copy')">
+              <button class="btn-ghost" onclick="copyResearch()">
                 <span id="research-actions-copy">Copy</span>
               </button>
-              <button class="btn-export" onclick="exportContent('research-output', 'docx')">Word</button>
-              <button class="btn-export" onclick="exportContent('research-output', 'pdf')">PDF</button>
+              <button class="btn-export" onclick="exportResearch('docx')">Word</button>
+              <button class="btn-export" onclick="exportResearch('pdf')">PDF</button>
               <button class="btn-accent" onclick="useInWriter()">
                 Use in Sermon Writer →
               </button>
             </div>
           </div>
+
           <div class="output-area prose" id="research-output">
             <div class="output-placeholder">
               <div class="placeholder-cross">✝</div>
               <p>Research results will appear here.</p>
               <p class="placeholder-hint">Enter a passage above and click <strong>Research Scripture</strong> to begin.</p>
+            </div>
+          </div>
+
+          <!-- Step controls (accept / skip) -->
+          <div class="step-controls" id="step-controls" style="display:none">
+            <button class="btn-primary" onclick="acceptStep()">Accept &amp; Continue →</button>
+            <button class="btn-ghost" onclick="editStep()">Edit this section</button>
+            <button class="btn-secondary" onclick="skipStep()">Skip</button>
+          </div>
+
+          <!-- Edit mode textarea -->
+          <div id="step-edit-area" style="display:none;padding:1rem 0">
+            <textarea id="step-edit-text" rows="12" style="width:100%;font-family:var(--font-body);font-size:0.95rem;border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem;resize:vertical"></textarea>
+            <div style="margin-top:0.6rem;display:flex;gap:0.5rem">
+              <button class="btn-primary" onclick="saveEditedStep()">Save &amp; Continue →</button>
+              <button class="btn-ghost" onclick="cancelEditStep()">Cancel</button>
+            </div>
+          </div>
+
+          <!-- After all steps complete -->
+          <div class="research-complete" id="research-complete" style="display:none">
+            <div class="complete-title">Research complete — 5 steps done</div>
+            <p class="complete-desc">Your research has been compiled below. Export it or save it to your account.</p>
+            <div class="complete-actions">
+              <button class="btn-export" onclick="exportResearch('pdf')">Download PDF</button>
+              <button class="btn-export" onclick="exportResearch('docx')">Download Word</button>
+              <button class="btn-accent" onclick="useInWriter()">Use in Sermon Writer →</button>
+              <button class="btn-save" id="save-sermon-btn" onclick="saveSermon()" style="display:none">Save to My Sermons</button>
             </div>
           </div>
         </div>
@@ -131,16 +172,16 @@
             <label for="write-style">Sermon Style &amp; Structure <span class="optional">optional</span></label>
             <select id="write-style" onchange="showStyleHint()">
               <option value="">— Choose a preaching approach —</option>
-              <option value="expository-hb-charles">Expository (Structured &amp; Text-Driven) — H.B. Charles Jr.</option>
-              <option value="big-idea-tony-evans">Big Idea (Clear &amp; Authoritative) — Tony Evans</option>
-              <option value="narrative-terry-anderson">Narrative (Story-Driven &amp; Dynamic) — Terry Anderson</option>
-              <option value="inductive-robert-smith">Inductive (Experiential Discovery) — Robert Smith Jr.</option>
-              <option value="expository-ralph-west">Expository (Deep &amp; Pastoral) — Ralph West</option>
-              <option value="problem-solution-tony-evans">Problem–Solution (Practical &amp; Direct) — Tony Evans</option>
-              <option value="homiletical-plot-terry-anderson">Homiletical Plot (Journey to Celebration) — Terry Anderson</option>
-              <option value="topical-hb-charles">Topical (Organized &amp; Focused) — H.B. Charles Jr.</option>
-              <option value="narrative-ralph-west">Narrative (Reflective &amp; Pastoral) — Ralph West</option>
-              <option value="big-idea-robert-smith">Big Idea (Experiential &amp; Imaginative) — Robert Smith Jr.</option>
+              <option value="expository-hb-charles">Expository (Structured &amp; Text-Driven)</option>
+              <option value="big-idea-tony-evans">Big Idea (Clear &amp; Authoritative)</option>
+              <option value="narrative-terry-anderson">Narrative (Story-Driven &amp; Dynamic)</option>
+              <option value="inductive-robert-smith">Inductive (Experiential Discovery)</option>
+              <option value="expository-ralph-west">Expository (Deep &amp; Pastoral)</option>
+              <option value="problem-solution-tony-evans">Problem–Solution (Practical &amp; Direct)</option>
+              <option value="homiletical-plot-terry-anderson">Homiletical Plot (Journey to Celebration)</option>
+              <option value="topical-hb-charles">Topical (Organized &amp; Focused)</option>
+              <option value="narrative-ralph-west">Narrative (Reflective &amp; Pastoral)</option>
+              <option value="big-idea-robert-smith">Big Idea (Experiential &amp; Imaginative)</option>
             </select>
             <div class="style-hint" id="style-hint"></div>
           </div>
@@ -250,6 +291,17 @@
           </div>
         </div>
 
+      </div>
+    </section>
+
+    <!-- ── My Sermons Tab ── -->
+    <section id="tab-sermons" class="tab-panel" style="display:none">
+      <div class="sermons-page">
+        <h2>My Sermons</h2>
+        <p class="panel-desc">Your saved research sessions. Click any entry to reload the research.</p>
+        <div id="sermons-list" class="sermons-list">
+          <div class="output-placeholder">Loading…</div>
+        </div>
       </div>
     </section>
 
