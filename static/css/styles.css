@@ -85,6 +85,33 @@ body {
   letter-spacing: 0.01em;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.btn-support {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--imb-orange);
+  border: 1.5px solid rgba(232,119,34,0.55);
+  border-radius: 20px;
+  padding: 5px 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn-support:hover {
+  background: rgba(232,119,34,0.12);
+  border-color: var(--imb-orange);
+  color: var(--imb-orange);
+}
+@media (max-width: 480px) {
+  .btn-support { display: none; }
+}
+
 /* ── Tab Nav ─────────────────────────────────────────────────────────────────── */
 .tab-nav {
   background: var(--surface);
