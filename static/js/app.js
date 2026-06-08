@@ -203,7 +203,7 @@ const researchState = {
   passage: '',
   topic: '',
   notes: '',
-  translation: 'ESV',
+  translation: 'NLT',
   briefType: 'concise',
   currentStep: 0,
   stepResults: [],
