@@ -108,6 +108,87 @@ async function logout() {
   showToast('Signed out', 'success');
 }
 
+// ── Bible Book / Chapter Data ──────────────────────────────────────────────────
+
+const BIBLE_BOOKS = {
+  OT: [
+    ['Genesis',50],['Exodus',40],['Leviticus',27],['Numbers',36],['Deuteronomy',34],
+    ['Joshua',24],['Judges',21],['Ruth',4],['1 Samuel',31],['2 Samuel',24],
+    ['1 Kings',22],['2 Kings',25],['1 Chronicles',29],['2 Chronicles',36],
+    ['Ezra',10],['Nehemiah',13],['Esther',10],['Job',42],['Psalms',150],
+    ['Proverbs',31],['Ecclesiastes',12],['Song of Solomon',8],['Isaiah',66],
+    ['Jeremiah',52],['Lamentations',5],['Ezekiel',48],['Daniel',12],
+    ['Hosea',14],['Joel',3],['Amos',9],['Obadiah',1],['Jonah',4],
+    ['Micah',7],['Nahum',3],['Habakkuk',3],['Zephaniah',3],['Haggai',2],
+    ['Zechariah',14],['Malachi',4],
+  ],
+  NT: [
+    ['Matthew',28],['Mark',16],['Luke',24],['John',21],['Acts',28],
+    ['Romans',16],['1 Corinthians',16],['2 Corinthians',13],['Galatians',6],
+    ['Ephesians',6],['Philippians',4],['Colossians',4],['1 Thessalonians',5],
+    ['2 Thessalonians',3],['1 Timothy',6],['2 Timothy',4],['Titus',3],
+    ['Philemon',1],['Hebrews',13],['James',5],['1 Peter',5],['2 Peter',3],
+    ['1 John',5],['2 John',1],['3 John',1],['Jude',1],['Revelation',22],
+  ],
+};
+
+const CHAPTER_COUNTS = {};
+[...BIBLE_BOOKS.OT, ...BIBLE_BOOKS.NT].forEach(([name, count]) => {
+  CHAPTER_COUNTS[name] = count;
+});
+
+function onBookChange() {
+  const book = document.getElementById('research-book').value;
+  const chapterSel = document.getElementById('research-chapter');
+  document.getElementById('research-verse-start').value = '';
+  document.getElementById('research-verse-end').value = '';
+  if (!book) {
+    chapterSel.innerHTML = '<option value="">Ch.</option>';
+    chapterSel.disabled = true;
+    return;
+  }
+  const count = CHAPTER_COUNTS[book] || 1;
+  let opts = '<option value="">Ch.</option>';
+  for (let i = 1; i <= count; i++) opts += `<option value="${i}">${i}</option>`;
+  chapterSel.innerHTML = opts;
+  chapterSel.disabled = false;
+}
+
+function buildPassageString() {
+  const book    = (document.getElementById('research-book').value || '').trim();
+  const chapter = (document.getElementById('research-chapter').value || '').trim();
+  const vStart  = (document.getElementById('research-verse-start').value || '').trim();
+  const vEnd    = (document.getElementById('research-verse-end').value || '').trim();
+  if (!book) return '';
+  if (!chapter) return book;
+  let ref = `${book} ${chapter}`;
+  if (vStart) {
+    ref += `:${vStart}`;
+    if (vEnd && vEnd !== vStart) ref += `–${vEnd}`;
+  }
+  return ref;
+}
+
+let currentBriefType = 'concise';
+
+function setBriefType(type) {
+  currentBriefType = type;
+  document.getElementById('brief-concise').classList.toggle('active', type === 'concise');
+  document.getElementById('brief-expanded').classList.toggle('active', type === 'expanded');
+}
+
+function showLoadingOverlay(visible) {
+  document.getElementById('research-loading').style.display = visible ? '' : 'none';
+}
+
+function setLoadingStep(stepNum, state) {
+  const el = document.getElementById(`loading-step-${stepNum}`);
+  if (!el) return;
+  el.classList.remove('step-active', 'step-done');
+  if (state === 'active') el.classList.add('step-active');
+  if (state === 'done')   el.classList.add('step-done');
+}
+
 // ── Research Steps ────────────────────────────────────────────────────────────
 
 const STEP_DEFS = [
@@ -122,8 +203,10 @@ const researchState = {
   passage: '',
   topic: '',
   notes: '',
-  currentStep: 0,  // 0 = not started, 1-5 = step in progress
-  stepResults: [], // { title, content } for each completed step
+  translation: 'ESV',
+  briefType: 'concise',
+  currentStep: 0,
+  stepResults: [],
   compiled: '',
 };
 
@@ -143,104 +226,78 @@ function renderStepDots() {
 }
 
 async function doResearch() {
-  const passage = document.getElementById('research-passage').value.trim();
+  const passage = buildPassageString();
   if (!passage) {
-    showToast('Please enter a Scripture passage.', 'error');
-    document.getElementById('research-passage').focus();
+    showToast('Please select a book to begin.', 'error');
+    document.getElementById('research-book').focus();
     return;
   }
 
-  researchState.passage = passage;
-  researchState.topic = document.getElementById('research-topic').value.trim();
-  researchState.notes = document.getElementById('research-notes').value.trim();
+  researchState.passage   = passage;
+  researchState.topic     = document.getElementById('research-topic').value.trim();
+  researchState.notes     = document.getElementById('research-notes').value.trim();
+  researchState.translation = document.getElementById('research-translation').value;
+  researchState.briefType = currentBriefType;
   researchState.currentStep = 1;
   researchState.stepResults = [];
-  researchState.compiled = '';
+  researchState.compiled  = '';
 
-  document.getElementById('step-progress').style.display = '';
+  document.getElementById('loading-ref').textContent = passage;
+  showLoadingOverlay(true);
+  document.getElementById('step-progress').style.display = 'none';
   document.getElementById('research-complete').style.display = 'none';
   document.getElementById('research-actions').style.display = 'none';
-  document.getElementById('step-edit-area').style.display = 'none';
+
+  for (let i = 1; i <= 5; i++) setLoadingStep(i, 'pending');
 
   setLoading('research-btn', true);
-  await runCurrentStep();
+  await runAllSteps();
   setLoading('research-btn', false);
 }
 
-async function runCurrentStep() {
-  const stepDef = STEP_DEFS[researchState.currentStep - 1];
-  renderStepDots();
+async function runAllSteps() {
+  document.getElementById('research-output').innerHTML = '';
 
-  document.getElementById('research-output-label').textContent =
-    `Step ${researchState.currentStep} of 5 — ${stepDef.title}`;
-  document.getElementById('step-controls').style.display = 'none';
-  document.getElementById('step-edit-area').style.display = 'none';
+  for (let stepNum = 1; stepNum <= 5; stepNum++) {
+    researchState.currentStep = stepNum;
+    setLoadingStep(stepNum, 'active');
 
-  const prior = researchState.stepResults
-    .map(s => `### ${s.title}\n${s.content}`)
-    .join('\n\n');
+    const prior = researchState.stepResults
+      .map(s => `### ${s.title}\n${s.content}`)
+      .join('\n\n');
 
-  try {
-    const text = await streamToOutput(
-      '/api/research/step',
-      {
-        step: researchState.currentStep,
-        passage: researchState.passage,
-        topic: researchState.topic,
-        notes: researchState.notes,
-        prior_steps: prior || null,
-      },
-      'research-output'
-    );
-    if (text) {
-      rawContent['step-current'] = text;
-      document.getElementById('step-controls').style.display = 'flex';
+    try {
+      const text = await streamToOutput(
+        '/api/research/step',
+        {
+          step:        stepNum,
+          passage:     researchState.passage,
+          topic:       researchState.topic      || null,
+          notes:       researchState.notes       || null,
+          prior_steps: prior                     || null,
+          translation: researchState.translation || null,
+          brief_type:  researchState.briefType   || null,
+        },
+        'research-output'
+      );
+
+      if (text) {
+        researchState.stepResults.push({ title: STEP_DEFS[stepNum - 1].title, content: text });
+        rawContent['step-current'] = text;
+      }
+
+      setLoadingStep(stepNum, 'done');
+    } catch (err) {
+      showLoadingOverlay(false);
+      document.getElementById('research-output').innerHTML =
+        `<div class="error-msg">${esc(err.message)}</div>`;
+      showToast(err.message, 'error');
+      return;
     }
-  } catch (err) {
-    document.getElementById('research-output').innerHTML = `<div class="error-msg">${err.message}</div>`;
-    showToast(err.message, 'error');
   }
-}
 
-function acceptStep() {
-  const stepDef = STEP_DEFS[researchState.currentStep - 1];
-  const content = rawContent['step-current'] || '';
-  researchState.stepResults.push({ title: stepDef.title, content });
-  advanceStep();
-}
-
-function skipStep() {
-  advanceStep();
-}
-
-function advanceStep() {
-  document.getElementById('step-controls').style.display = 'none';
-  if (researchState.currentStep < 5) {
-    researchState.currentStep++;
-    runCurrentStep();
-  } else {
-    finishResearch();
-  }
-}
-
-function editStep() {
-  const current = rawContent['step-current'] || '';
-  document.getElementById('step-edit-text').value = current;
-  document.getElementById('step-controls').style.display = 'none';
-  document.getElementById('step-edit-area').style.display = '';
-}
-
-function saveEditedStep() {
-  const edited = document.getElementById('step-edit-text').value;
-  rawContent['step-current'] = edited;
-  document.getElementById('research-output').innerHTML = renderMarkdown(edited);
-  document.getElementById('step-edit-area').style.display = 'none';
-  document.getElementById('step-controls').style.display = 'flex';
-}
-
-function cancelEditStep() {
-  document.getElementById('step-edit-area').style.display = 'none';
-  document.getElementById('step-controls').style.display = 'flex';
+  showLoadingOverlay(false);
+  finishResearch();
 }
 
 function finishResearch() {
@@ -254,9 +311,10 @@ function finishResearch() {
 
   document.getElementById('research-output').innerHTML = renderMarkdown(compiled);
   document.getElementById('research-output-label').textContent = 'Complete Research';
+  const completeTitle = document.querySelector('.complete-title');
+  if (completeTitle) completeTitle.textContent = `Research complete — ${researchState.passage}`;
 
   document.getElementById('step-progress').style.display = 'none';
-  document.getElementById('step-controls').style.display = 'none';
   document.getElementById('research-complete').style.display = '';
   document.getElementById('research-actions').style.display = 'flex';
 
@@ -348,14 +406,12 @@ async function loadSavedSermon(id) {
     rawContent['research-output'] = sermon.research || '';
 
     // Pre-fill form
-    if (sermon.passage) document.getElementById('research-passage').value = sermon.passage;
     if (sermon.topic) document.getElementById('research-topic').value = sermon.topic;
 
     // Show compiled research
     document.getElementById('research-output').innerHTML = renderMarkdown(sermon.research || '');
     document.getElementById('research-output-label').textContent = 'Saved Research';
     document.getElementById('step-progress').style.display = 'none';
-    document.getElementById('step-controls').style.display = 'none';
     document.getElementById('research-complete').style.display = '';
     document.getElementById('research-actions').style.display = 'flex';
 
@@ -563,7 +619,7 @@ async function _exportDoc(text, format, title) {
 // ── Use in Writer ─────────────────────────────────────────────────────────────
 
 function useInWriter() {
-  const passage = document.getElementById('research-passage').value.trim();
+  const passage = researchState.passage;
   if (passage) document.getElementById('write-passage').value = passage;
   const text = researchState.compiled ||
     (document.getElementById('research-output').innerText || '');
@@ -654,9 +710,25 @@ function esc(s) {
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
 
-  document.getElementById('research-passage').addEventListener('keydown', e => {
+  // Populate book dropdown from BIBLE_BOOKS data
+  const bookSel = document.getElementById('research-book');
+  ['OT', 'NT'].forEach(group => {
+    const og = document.createElement('optgroup');
+    og.label = group === 'OT' ? 'Old Testament' : 'New Testament';
+    BIBLE_BOOKS[group].forEach(([name]) => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      og.appendChild(opt);
+    });
+    bookSel.appendChild(og);
+  });
+
+  // Enter on verse-end triggers research
+  document.getElementById('research-verse-end').addEventListener('keydown', e => {
     if (e.key === 'Enter') doResearch();
   });
+
   document.getElementById('write-passage').addEventListener('keydown', e => {
     if (e.key === 'Enter') doWrite();
   });

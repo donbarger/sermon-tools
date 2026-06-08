@@ -342,6 +342,8 @@ class ResearchStepRequest(BaseModel):
     topic: Optional[str] = None
     notes: Optional[str] = None
     prior_steps: Optional[str] = None
+    translation: Optional[str] = None
+    brief_type: Optional[str] = None
 
 
 @app.post("/api/research/step")
@@ -353,6 +355,11 @@ async def research_step(request: ResearchStepRequest):
         raise HTTPException(status_code=400, detail="Step must be 1–5")
 
     system = f"{RESEARCH_STEP_BASE}\n\nYOUR TASK FOR THIS STEP:\n{step_def['instruction']}"
+
+    if request.translation:
+        system += f"\n\nThe pastor prefers the {request.translation} translation. Reference this translation when quoting Scripture in your response."
+    if request.brief_type == "concise":
+        system += "\n\nLength guidance: Be concise — limit this section to 3–4 paragraphs. Prioritize the most exegetically and pastorally significant observations."
 
     msg = f"Passage: {request.passage}"
     if request.topic:

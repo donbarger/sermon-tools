@@ -399,6 +399,7 @@ body {
 
 /* ── Output Panel ────────────────────────────────────────────────────────────── */
 .panel-output {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -787,3 +788,236 @@ body {
 }
 .sermon-card-meta span::before { content: ''; }
 .sermon-card-meta span + span::before { content: '·'; margin-right: 0.6rem; }
+
+/* ── Passage Selector ────────────────────────────────────────────────────────── */
+
+.passage-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.verse-input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 8px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+.verse-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+  background: white;
+}
+
+/* ── Brief Type Toggle ───────────────────────────────────────────────────────── */
+
+.brief-toggle {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.brief-toggle button {
+  flex: 1;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg);
+  border: none;
+  padding: 9px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.01em;
+}
+.brief-toggle button + button {
+  border-left: 1.5px solid var(--border);
+}
+.brief-toggle button.active {
+  background: var(--accent);
+  color: white;
+}
+.brief-toggle button:hover:not(.active) {
+  background: var(--accent-light);
+  color: var(--ink);
+}
+
+/* ── Research Loading Overlay ────────────────────────────────────────────────── */
+
+.research-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+  gap: 0;
+  overflow-y: auto;
+}
+
+.loading-header {
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 0.2rem;
+}
+
+.loading-passage-ref {
+  font-family: var(--font-ui);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 1.75rem;
+}
+
+/* ── Animated Book ───────────────────────────────────────────────────────────── */
+
+.book-animation {
+  position: relative;
+  width: 80px;
+  height: 56px;
+  margin: 0 auto 1.5rem;
+  perspective: 200px;
+}
+.book-cover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 34px;
+  height: 56px;
+  background: var(--accent);
+  border-radius: 3px 0 0 3px;
+  opacity: 0.9;
+}
+.book-spine {
+  position: absolute;
+  left: 34px;
+  top: 0;
+  width: 6px;
+  height: 56px;
+  background: var(--imb-teal);
+  z-index: 3;
+}
+.book-page {
+  position: absolute;
+  top: 4px;
+  left: 40px;
+  height: 48px;
+  width: 34px;
+  border-radius: 0 3px 3px 0;
+  transform-origin: left center;
+  background: #f8f6f0;
+  border: 1px solid var(--border);
+  box-shadow: 1px 0 3px rgba(0,0,0,0.07);
+}
+.book-page:nth-child(3) { animation: page-turn 2.4s ease-in-out infinite; }
+.book-page:nth-child(4) { animation: page-turn 2.4s ease-in-out infinite 0.5s; opacity: 0.7; }
+.book-page:nth-child(5) { animation: page-turn 2.4s ease-in-out infinite 1s; opacity: 0.45; }
+
+@keyframes page-turn {
+  0%   { transform: rotateY(0deg); }
+  35%  { transform: rotateY(-150deg); }
+  55%  { transform: rotateY(-165deg); }
+  85%  { transform: rotateY(0deg); }
+  100% { transform: rotateY(0deg); }
+}
+
+.loading-disclaimer {
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 340px;
+  margin-bottom: 1.75rem;
+  font-style: italic;
+}
+
+/* ── Step Status List ────────────────────────────────────────────────────────── */
+
+.loading-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.loading-step-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-family: var(--font-ui);
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: background 0.25s, border-color 0.25s, color 0.25s;
+}
+
+.loading-step-item.step-active {
+  background: rgba(72,122,123,0.06);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.loading-step-item.step-done {
+  background: rgba(0,130,110,0.06);
+  border-color: var(--imb-teal);
+  color: var(--ink);
+}
+
+.step-circle {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #c44;
+  background: #c44;
+  transition: background 0.25s, border-color 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 900;
+  color: white;
+  line-height: 1;
+}
+
+.loading-step-item.step-active .step-circle {
+  background: transparent;
+  border-color: var(--accent);
+  animation: step-pulse 1s ease-in-out infinite;
+}
+
+.loading-step-item.step-done .step-circle {
+  background: var(--imb-teal);
+  border-color: var(--imb-teal);
+}
+.loading-step-item.step-done .step-circle::after {
+  content: '✓';
+}
+
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(72,122,123,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(72,122,123,0.1); }
+}

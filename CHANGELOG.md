@@ -2,6 +2,15 @@
 
 Most recent at top. Versioning is loose — this is a living app, shipped continuously.
 
+## v0.8 — Research tab redesign (passage selector + cinematic loading)
+
+- **Structured passage selector** — Book dropdown (all 66 books, grouped OT/NT), dynamic chapter dropdown, optional verse-start/verse-end number inputs. Replaces the free-text passage field.
+- **Translation picker** — 7 translations: NKJV, ESV (default), CSB, NIV, NLT, KJV, NASB. Selection is passed to the AI prompt so Scripture quotes reference the chosen version.
+- **Brief type toggle** — Concise Brief (3–4 paragraphs per section, highest-impact observations) or Expanded Brief (full scholarly depth, previous default behavior).
+- **Cinematic loading screen** — After clicking *Generate Research*: animated CSS page-turning book, passage reference in the header, disclaimer ("Our AI Team of Biblical Scholars is working on your sermon research. Give them a few minutes."), and 5 section status indicators (gray → teal pulsing → green with checkmark) that update as each step completes.
+- **Auto-run flow** — All 5 research sections now run sequentially without requiring Accept/Skip between steps. The user sees the cinematic overlay while research generates, then the full compiled output appears when all 5 sections are done.
+- **Button renamed** — "Research Scripture" → "Generate Research".
+
 ## v0.7 — UX overhaul (the journey)
 
 - **Workflow guide** at the top of every signed-in tab: 1. Research → 2. Shape → 3. Evaluate → 4. Preach. Active phase glows, completed phases go teal, click any phase to jump there.

@@ -73,13 +73,45 @@
 
         <div class="panel-inputs">
           <h2>Scripture Research</h2>
-          <p class="panel-desc">Enter a passage or topic to receive thorough biblical research — exegesis, cross-references, theological themes, and application angles to ground your sermon preparation.</p>
+          <p class="panel-desc">Select a passage, choose your translation, and click <strong>Generate Research</strong> to receive thorough biblical research grounded in exegesis, cross-references, theological themes, and application angles.</p>
 
+          <!-- Passage: Book + Chapter -->
           <div class="form-group">
-            <label for="research-passage">Scripture Passage <span class="required">*</span></label>
-            <input type="text" id="research-passage" placeholder="e.g. John 3:16, Romans 8:1–11, Psalm 23" autocomplete="off" />
+            <label>Scripture Passage <span class="required">*</span></label>
+            <div class="passage-row-2">
+              <select id="research-book" onchange="onBookChange()">
+                <option value="">— Book —</option>
+              </select>
+              <select id="research-chapter" disabled>
+                <option value="">Ch.</option>
+              </select>
+            </div>
           </div>
 
+          <!-- Passage: Verse range (optional) -->
+          <div class="form-group">
+            <label>Verses <span class="optional">optional</span></label>
+            <div class="passage-row-2">
+              <input class="verse-input" type="number" id="research-verse-start" placeholder="From" min="1" max="176" />
+              <input class="verse-input" type="number" id="research-verse-end" placeholder="To" min="1" max="176" />
+            </div>
+          </div>
+
+          <!-- Translation -->
+          <div class="form-group">
+            <label for="research-translation">Preferred Translation</label>
+            <select id="research-translation">
+              <option value="NKJV">NKJV — New King James Version</option>
+              <option value="ESV" selected>ESV — English Standard Version</option>
+              <option value="CSB">CSB — Christian Standard Bible</option>
+              <option value="NIV">NIV — New International Version</option>
+              <option value="NLT">NLT — New Living Translation</option>
+              <option value="KJV">KJV — King James Version</option>
+              <option value="NASB">NASB — New American Standard Bible</option>
+            </select>
+          </div>
+
+          <!-- Topic + Notes (unchanged ids) -->
           <div class="form-group">
             <label for="research-topic">Topic Focus <span class="optional">optional</span></label>
             <input type="text" id="research-topic" placeholder="e.g. God's grace, spiritual warfare, anxiety" autocomplete="off" />
@@ -90,14 +122,45 @@
             <textarea id="research-notes" rows="3" placeholder="Series theme, congregation context, specific angle you're exploring..."></textarea>
           </div>
 
+          <!-- Brief type toggle -->
+          <div class="form-group">
+            <label>Research Brief</label>
+            <div class="brief-toggle">
+              <button id="brief-concise" class="active" onclick="setBriefType('concise')">Concise Brief</button>
+              <button id="brief-expanded" onclick="setBriefType('expanded')">Expanded Brief</button>
+            </div>
+          </div>
+
           <div class="btn-row">
             <button class="btn-primary" id="research-btn" onclick="doResearch()">
-              Research Scripture
+              Generate Research
             </button>
           </div>
         </div>
 
         <div class="panel-output">
+
+          <!-- Research Loading Overlay -->
+          <div id="research-loading" class="research-loading-overlay" style="display:none">
+            <div class="loading-header">Preparing Sermon Research</div>
+            <div class="loading-passage-ref" id="loading-ref"></div>
+            <div class="book-animation" role="img" aria-label="Animated open book">
+              <div class="book-cover"></div>
+              <div class="book-spine"></div>
+              <div class="book-page"></div>
+              <div class="book-page"></div>
+              <div class="book-page"></div>
+            </div>
+            <p class="loading-disclaimer">Our AI Team of Biblical Scholars is working on your sermon research. Give them a few minutes.</p>
+            <ul class="loading-steps">
+              <li class="loading-step-item" id="loading-step-1"><span class="step-circle"></span>Historical &amp; Cultural Context</li>
+              <li class="loading-step-item" id="loading-step-2"><span class="step-circle"></span>Textual Exegesis</li>
+              <li class="loading-step-item" id="loading-step-3"><span class="step-circle"></span>Cross References &amp; Connections</li>
+              <li class="loading-step-item" id="loading-step-4"><span class="step-circle"></span>Theological Themes</li>
+              <li class="loading-step-item" id="loading-step-5"><span class="step-circle"></span>Application &amp; Sermon Angles</li>
+            </ul>
+          </div>
+
           <!-- Step progress indicator -->
           <div class="step-progress" id="step-progress" style="display:none">
             <div class="step-dots" id="step-dots"></div>
@@ -122,23 +185,7 @@
             <div class="output-placeholder">
               <div class="placeholder-cross">✝</div>
               <p>Research results will appear here.</p>
-              <p class="placeholder-hint">Enter a passage above and click <strong>Research Scripture</strong> to begin.</p>
-            </div>
-          </div>
-
-          <!-- Step controls (accept / skip) -->
-          <div class="step-controls" id="step-controls" style="display:none">
-            <button class="btn-primary" onclick="acceptStep()">Accept &amp; Continue →</button>
-            <button class="btn-ghost" onclick="editStep()">Edit this section</button>
-            <button class="btn-secondary" onclick="skipStep()">Skip</button>
-          </div>
-
-          <!-- Edit mode textarea -->
-          <div id="step-edit-area" style="display:none;padding:1rem 0">
-            <textarea id="step-edit-text" rows="12" style="width:100%;font-family:var(--font-body);font-size:0.95rem;border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem;resize:vertical"></textarea>
-            <div style="margin-top:0.6rem;display:flex;gap:0.5rem">
-              <button class="btn-primary" onclick="saveEditedStep()">Save &amp; Continue →</button>
-              <button class="btn-ghost" onclick="cancelEditStep()">Cancel</button>
+              <p class="placeholder-hint">Select a passage above and click <strong>Generate Research</strong> to begin.</p>
             </div>
           </div>
 
