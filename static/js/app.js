@@ -710,20 +710,6 @@ function esc(s) {
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
 
-  // Populate book dropdown from BIBLE_BOOKS data
-  const bookSel = document.getElementById('research-book');
-  ['OT', 'NT'].forEach(group => {
-    const og = document.createElement('optgroup');
-    og.label = group === 'OT' ? 'Old Testament' : 'New Testament';
-    BIBLE_BOOKS[group].forEach(([name]) => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      og.appendChild(opt);
-    });
-    bookSel.appendChild(og);
-  });
-
   // Enter on verse-end triggers research
   document.getElementById('research-verse-end').addEventListener('keydown', e => {
     if (e.key === 'Enter') doResearch();
