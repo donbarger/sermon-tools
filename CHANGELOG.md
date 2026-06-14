@@ -2,6 +2,10 @@
 
 Most recent at top. Versioning is loose — this is a living app, shipped continuously.
 
+## v0.12 — Prompt-level length guidance (the durable anti-truncation fix)
+
+- Rather than leaning only on big token ceilings, each call now tells the model to size itself: expanded research steps target ~800–1,200 words (disciplined depth, no padding/exhaustive lists); sermon sections are told they're a fraction of the whole sermon and should sum to the requested target length, with short sections allowed to stay short. Keeps every call comfortably under its cap, so truncation shouldn't recur. If output ever still hits a cap, this is the lever to tune, not the cap.
+
 ## v0.11 — Raise per-call output caps so individual steps/sections don't truncate
 
 - After v0.9/v0.10, a single **research step** on an Expanded brief was still long enough to hit its 8192-token ceiling (now surfaced by the v0.9 length note instead of failing silently). Raised the research-step cap to 16000 and the per-section sermon-write cap to 8192. A single research section or sermon section now has far more headroom than any realistic output needs.

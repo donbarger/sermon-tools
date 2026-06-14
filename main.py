@@ -354,7 +354,9 @@ FOR THIS TASK: produce ONLY the sermon's section outline, as a JSON array of sec
 
 WRITE_SECTION_SYSTEM = WRITE_SYSTEM_PROMPT + """
 
-FOR THIS TASK: write ONLY the single section requested, in full preachable prose (not bullet notes), flowing naturally from the sections already written. Do NOT write any other section, and do not repeat content already covered. Begin with the section heading as a markdown H2 (## ), then the prose. Keep Scripture references specific, the Gospel clear, and application concrete."""
+FOR THIS TASK: write ONLY the single section requested, in full preachable prose (not bullet notes), flowing naturally from the sections already written. Do NOT write any other section, and do not repeat content already covered. Begin with the section heading as a markdown H2 (## ), then the prose. Keep Scripture references specific, the Gospel clear, and application concrete.
+
+LENGTH: size this section for its place in the whole. Across all the sections, the finished sermon should land near the requested target length, so a single section is only a fraction of that, not a whole sermon. Be substantive without padding; let short sections (intros, transitions) stay short."""
 
 
 def _parse_outline(raw: str) -> List[str]:
@@ -502,6 +504,8 @@ async def research_step(request: ResearchStepRequest):
         system += f"\n\nThe pastor prefers the {request.translation} translation. Reference this translation when quoting Scripture in your response."
     if request.brief_type == "concise":
         system += "\n\nLength guidance: Be concise — limit this section to 3–4 paragraphs. Prioritize the most exegetically and pastorally significant observations."
+    else:
+        system += "\n\nLength guidance: Be thorough but disciplined. Develop the most significant observations in real depth, but don't pad, repeat, or pile on exhaustive lists. Keep this section to roughly 800–1,200 words."
 
     # Ground steps 1–4 in real scholarship: fetch authoritative references from the
     # Study Bible MCP and inject them so the model cites real sources instead of
