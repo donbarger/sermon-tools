@@ -2,6 +2,10 @@
 
 Most recent at top. Versioning is loose — this is a living app, shipped continuously.
 
+## v0.11 — Raise per-call output caps so individual steps/sections don't truncate
+
+- After v0.9/v0.10, a single **research step** on an Expanded brief was still long enough to hit its 8192-token ceiling (now surfaced by the v0.9 length note instead of failing silently). Raised the research-step cap to 16000 and the per-section sermon-write cap to 8192. A single research section or sermon section now has far more headroom than any realistic output needs.
+
 ## v0.10 — MCP grounding actually wired in + section-by-section sermon writing
 
 - **MCP grounding is live for real** — `mcp_refs.py` existed but was never imported, so research steps were ungrounded (the model paraphrased "scholarship" from training, and could hallucinate lexicon citations). `research_step` now calls `fetch_step_refs` for steps 1–4 and injects the real LSJ / Abbott-Smith / Tyndale / Aquifer references into the prompt. Degrades gracefully (runs ungrounded) if the MCP server times out. Added the missing `mcp_cache` table to `db.py` so the 30-day cache actually persists.

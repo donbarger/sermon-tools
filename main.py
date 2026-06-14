@@ -409,7 +409,7 @@ async def write_section(request: WriteSectionRequest):
         msg += f"\n\nSections written so far (for continuity — do not repeat these):\n{request.prior_sections}"
     msg += f"\n\nNow write this one section in full:\n{request.section_title}"
 
-    return await stream_openrouter(WRITE_SECTION_SYSTEM, msg, max_tokens=4096)
+    return await stream_openrouter(WRITE_SECTION_SYSTEM, msg, max_tokens=8192)
 
 
 @app.post("/api/evaluate")
@@ -519,7 +519,8 @@ async def research_step(request: ResearchStepRequest):
         msg += f"\n\nFor context, here is what has been researched in prior steps:\n{request.prior_steps}"
     msg += f"\n\nNow complete Step {request.step}: {step_def['title']}."
 
-    return await stream_openrouter(system, msg)
+    # 16k so an expanded-brief step (the longest single output in the app) doesn't truncate.
+    return await stream_openrouter(system, msg, max_tokens=16000)
 
 
 # ─── Auth Routes ──────────────────────────────────────────────────────────────
