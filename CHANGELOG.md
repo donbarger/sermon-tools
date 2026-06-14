@@ -7,6 +7,7 @@ Most recent at top. Versioning is loose — this is a living app, shipped contin
 - **MCP grounding is live for real** — `mcp_refs.py` existed but was never imported, so research steps were ungrounded (the model paraphrased "scholarship" from training, and could hallucinate lexicon citations). `research_step` now calls `fetch_step_refs` for steps 1–4 and injects the real LSJ / Abbott-Smith / Tyndale / Aquifer references into the prompt. Degrades gracefully (runs ungrounded) if the MCP server times out. Added the missing `mcp_cache` table to `db.py` so the 30-day cache actually persists.
 - **Section-by-section sermon writing** — the Shape/Write step no longer generates a whole sermon in one call. New `POST /api/write/outline` builds the section list, then the front-end streams each section via `POST /api/write/section` (passing the outline + prior sections for continuity). No single call has to fit the whole sermon, so even long sermons can't hit the output ceiling. Old `/api/write` retained.
 - **README corrected** — research is **5** auto-running steps (not "6, Read → …"); the Shape description now matches the real section-by-section flow (dropped the unimplemented "three outline cards / refinement chips"); MCP grounding note now reflects reality + graceful fallback.
+- **Footer** — removed "Powered by Claude Sonnet" from the page footer.
 
 ## v0.9 — Fix: generation cut off mid-stream ("timing out")
 
