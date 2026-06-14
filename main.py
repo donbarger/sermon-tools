@@ -142,7 +142,9 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
 
 # ─── Streaming Helper ─────────────────────────────────────────────────────────
 
-async def stream_openrouter(system_prompt: str, user_message: str) -> StreamingResponse:
+async def stream_openrouter(
+    system_prompt: str, user_message: str, max_tokens: int = 8192
+) -> StreamingResponse:
     if not OPENROUTER_API_KEY:
         raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY is not configured")
 
@@ -160,12 +162,16 @@ async def stream_openrouter(system_prompt: str, user_message: str) -> StreamingR
             {"role": "user", "content": user_message},
         ],
         "stream": True,
-        "max_tokens": 4096,
+        "max_tokens": max_tokens,
     }
 
     async def generate():
+        # Short connect/write timeouts, generous read: once tokens start flowing,
+        # the read timeout is the max gap *between* chunks, not a total cap, so a
+        # long generation won't be killed mid-stream.
+        timeout = httpx.Timeout(connect=15.0, read=300.0, write=15.0, pool=15.0)
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 async with client.stream(
                     "POST",
                     f"{OPENROUTER_BASE_URL}/chat/completions",
@@ -178,25 +184,41 @@ async def stream_openrouter(system_prompt: str, user_message: str) -> StreamingR
                         yield f"data: {json.dumps({'error': f'AI service error: {response.status_code}'})}\n\n"
                         return
 
+                    finish_reason = None
                     async for line in response.aiter_lines():
                         if not line.startswith("data: "):
                             continue
                         data = line[6:].strip()
                         if data == "[DONE]":
-                            yield "data: [DONE]\n\n"
                             break
                         try:
                             chunk = json.loads(data)
-                            delta = chunk["choices"][0]["delta"].get("content", "")
+                            choice = chunk["choices"][0]
+                            if choice.get("finish_reason"):
+                                finish_reason = choice["finish_reason"]
+                            delta = choice["delta"].get("content", "")
                             if delta:
                                 yield f"data: {json.dumps({'text': delta})}\n\n"
                         except (json.JSONDecodeError, KeyError):
                             continue
+
+                    # Don't truncate silently: tell the user (and the log) when the
+                    # model hit the output-length ceiling so they can regenerate.
+                    if finish_reason == "length":
+                        logger.warning("OpenRouter output truncated (finish_reason=length, max_tokens=%s)", max_tokens)
+                        note = "\n\n_(This response hit the length limit and was cut off. Use Regenerate, or switch the brief to Concise, to get the rest.)_"
+                        yield f"data: {json.dumps({'text': note})}\n\n"
+                    yield "data: [DONE]\n\n"
         except Exception as e:
             logger.error(f"Streaming error: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        # Defeat proxy buffering so chunks reach the browser as they're produced.
+        headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"},
+    )
 
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
@@ -267,7 +289,7 @@ DELIVERY GOAL:
 
 Build this sermon strictly according to these structural and stylistic guidelines. Let the selected approach shape everything — the outline, the pacing, the language, and how truth is revealed."""
 
-    return await stream_openrouter(WRITE_SYSTEM_PROMPT, user_message)
+    return await stream_openrouter(WRITE_SYSTEM_PROMPT, user_message, max_tokens=16000)
 
 
 @app.post("/api/evaluate")

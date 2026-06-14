@@ -2,6 +2,13 @@
 
 Most recent at top. Versioning is loose — this is a living app, shipped continuously.
 
+## v0.9 — Fix: generation cut off mid-stream ("timing out")
+
+- **Root cause** — Every streamed call (research, sermon write, evaluate) capped output at `max_tokens: 4096` (~3,000 words) and the server **ignored `finish_reason`**. Long outputs (a full research step, or a 30-40 min sermon) hit the ceiling and truncated mid-token, e.g. delivery notes ending abruptly at `**`, with no signal, which read as a freeze/timeout.
+- **Fix** — `max_tokens` raised and parametrized: 8192 for research/evaluate, 16000 for the long sermon-write path. `stream_openrouter` now reads `finish_reason`; on `length` it appends a visible "hit the length limit, use Regenerate" note and logs a warning, so truncation is never silent again.
+- **Stream hardening** — explicit `httpx.Timeout` (connect 15s, read 300s, write 15s) so an actively-generating request isn't killed by the old flat 120s; added `X-Accel-Buffering: no` + `Cache-Control: no-cache` response headers so no proxy buffers the SSE.
+- **Note** — `mcp_refs.py` (Study Bible grounding) is currently dead code, not imported by `main.py`. Flagged for a future pass.
+
 ## v0.8 — Research tab redesign (passage selector + cinematic loading)
 
 - **Structured passage selector** — Book dropdown (all 66 books, grouped OT/NT), dynamic chapter dropdown, optional verse-start/verse-end number inputs. Replaces the free-text passage field.
