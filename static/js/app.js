@@ -643,12 +643,49 @@ async function doWrite() {
   const research_notes = document.getElementById('write-research').value.trim();
   const sermon_length = document.getElementById('write-length').value;
   const style = document.getElementById('write-style').value;
+  const body = { passage, title, audience, research_notes, sermon_length, style };
 
   setLoading('write-btn', true);
   document.getElementById('write-actions').style.display = 'none';
+  const out = document.getElementById('write-output');
+  out.innerHTML = `<div class="streaming-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+
   try {
-    const result = await streamResponse('/api/write', { passage, title, audience, research_notes, sermon_length, style }, 'write-output');
-    if (result) document.getElementById('write-actions').style.display = 'flex';
+    // 1. Outline first — one quick call decides the sermon's sections.
+    const oRes = await fetch('/api/write/outline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!oRes.ok) {
+      let d = {}; try { d = await oRes.json(); } catch {}
+      throw new Error(d.detail || 'Could not generate the outline.');
+    }
+    const { sections } = await oRes.json();
+    if (!sections || !sections.length) throw new Error('The outline came back empty. Please try again.');
+
+    // 2. Stream each section in its own call — no single call has to fit the
+    //    whole sermon, so nothing gets truncated.
+    out.innerHTML = '';
+    const priorParts = [];
+    for (let i = 0; i < sections.length; i++) {
+      const secEl = document.createElement('div');
+      secEl.className = 'sermon-section';
+      secEl.id = `write-sec-${i}`;
+      out.appendChild(secEl);
+      const text = await streamToOutput('/api/write/section', {
+        ...body,
+        outline: sections,
+        section_title: sections[i],
+        prior_sections: priorParts.join('\n\n') || null,
+      }, `write-sec-${i}`);
+      if (text) priorParts.push(text);
+    }
+
+    const compiled = priorParts.join('\n\n');
+    rawContent['write-output'] = compiled;
+    if (compiled) document.getElementById('write-actions').style.display = 'flex';
+    else throw new Error('No sermon content was generated. Please try again.');
   } catch (err) {
     document.getElementById('write-output').innerHTML = `<div class="error-msg">${err.message}</div>`;
     showToast(err.message, 'error');

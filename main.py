@@ -9,7 +9,7 @@ import re
 import json
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 import httpx
@@ -24,6 +24,7 @@ load_dotenv()
 
 import db
 import auth
+import mcp_refs
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -292,6 +293,125 @@ Build this sermon strictly according to these structural and stylistic guideline
     return await stream_openrouter(WRITE_SYSTEM_PROMPT, user_message, max_tokens=16000)
 
 
+# ─── Section-by-section sermon writing ──────────────────────────────────────────
+# Instead of generating a whole 30-40 min sermon in one call (slow, and bumps the
+# output ceiling), we generate the outline first, then stream each section in its
+# own call. No single call has to fit the whole sermon, so nothing truncates.
+
+def _write_context(req) -> str:
+    ctx = f"Main Passage: {req.passage}"
+    if req.title:
+        ctx += f"\nSermon Title: {req.title}"
+    if req.audience:
+        ctx += f"\nCongregation context: {req.audience}"
+    if req.research_notes:
+        ctx += f"\nResearch notes to incorporate:\n{req.research_notes}"
+    ctx += f"\nTarget length: {req.sermon_length}"
+    if req.style and req.style in SERMON_STYLES:
+        s = SERMON_STYLES[req.style]
+        ctx += (
+            f"\n\nPREACHING STYLE SELECTED: {s['name']}"
+            f"\nSTRUCTURE:\n{s['structure']}"
+            f"\nSTYLE & VOICE:\n{s['style']}"
+            f"\nDELIVERY GOAL:\n{s['delivery']}"
+        )
+    return ctx
+
+
+async def complete_openrouter(system_prompt: str, user_message: str, max_tokens: int = 1024) -> str:
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY is not configured")
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://sermon-tools.app",
+        "X-Title": "Sermon Tools",
+    }
+    payload = {
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ],
+        "max_tokens": max_tokens,
+    }
+    timeout = httpx.Timeout(connect=15.0, read=120.0, write=15.0, pool=15.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        resp = await client.post(
+            f"{OPENROUTER_BASE_URL}/chat/completions", headers=headers, json=payload
+        )
+        if resp.status_code != 200:
+            logger.error(f"OpenRouter error {resp.status_code}: {resp.text[:500]}")
+            raise HTTPException(status_code=502, detail=f"AI service error: {resp.status_code}")
+        return resp.json()["choices"][0]["message"]["content"]
+
+
+WRITE_OUTLINE_SYSTEM = WRITE_SYSTEM_PROMPT + """
+
+FOR THIS TASK: produce ONLY the sermon's section outline, as a JSON array of section headings in order — nothing else, no prose, no code fence. Include a compelling introduction, 2-4 main points (each heading should state the actual point, not just "Point 1"), and a conclusion with a clear call to response. Example:
+["Introduction: The Ache Nothing Seems to Fill", "Point 1: ...", "Point 2: ...", "Conclusion: ..."]"""
+
+
+WRITE_SECTION_SYSTEM = WRITE_SYSTEM_PROMPT + """
+
+FOR THIS TASK: write ONLY the single section requested, in full preachable prose (not bullet notes), flowing naturally from the sections already written. Do NOT write any other section, and do not repeat content already covered. Begin with the section heading as a markdown H2 (## ), then the prose. Keep Scripture references specific, the Gospel clear, and application concrete."""
+
+
+def _parse_outline(raw: str) -> List[str]:
+    text = raw.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
+        text = re.sub(r"\n?```$", "", text).strip()
+    start, end = text.find("["), text.rfind("]")
+    if start != -1 and end != -1 and end > start:
+        text = text[start:end + 1]
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return []
+    return [str(s).strip() for s in data if isinstance(s, (str, int)) and str(s).strip()]
+
+
+@app.post("/api/write/outline")
+async def write_outline(request: WriteRequest):
+    if not request.passage.strip():
+        raise HTTPException(status_code=400, detail="Scripture passage is required")
+    raw = await complete_openrouter(WRITE_OUTLINE_SYSTEM, _write_context(request), max_tokens=1024)
+    sections = _parse_outline(raw)
+    if not sections:
+        raise HTTPException(status_code=502, detail="Could not generate an outline. Please try again.")
+    return {"sections": sections}
+
+
+class WriteSectionRequest(BaseModel):
+    passage: str
+    title: Optional[str] = None
+    audience: Optional[str] = None
+    research_notes: Optional[str] = None
+    sermon_length: str = "30-40 minutes"
+    style: Optional[str] = None
+    outline: List[str] = []
+    section_title: str
+    prior_sections: Optional[str] = None
+
+
+@app.post("/api/write/section")
+async def write_section(request: WriteSectionRequest):
+    if not request.passage.strip():
+        raise HTTPException(status_code=400, detail="Scripture passage is required")
+    if not request.section_title.strip():
+        raise HTTPException(status_code=400, detail="A section title is required")
+
+    msg = _write_context(request)
+    if request.outline:
+        msg += "\n\nFull sermon outline:\n" + "\n".join(f"- {h}" for h in request.outline)
+    if request.prior_sections:
+        msg += f"\n\nSections written so far (for continuity — do not repeat these):\n{request.prior_sections}"
+    msg += f"\n\nNow write this one section in full:\n{request.section_title}"
+
+    return await stream_openrouter(WRITE_SECTION_SYSTEM, msg, max_tokens=4096)
+
+
 @app.post("/api/evaluate")
 async def evaluate_sermon(
     sermon_text: Optional[str] = Form(None),
@@ -382,6 +502,13 @@ async def research_step(request: ResearchStepRequest):
         system += f"\n\nThe pastor prefers the {request.translation} translation. Reference this translation when quoting Scripture in your response."
     if request.brief_type == "concise":
         system += "\n\nLength guidance: Be concise — limit this section to 3–4 paragraphs. Prioritize the most exegetically and pastorally significant observations."
+
+    # Ground steps 1–4 in real scholarship: fetch authoritative references from the
+    # Study Bible MCP and inject them so the model cites real sources instead of
+    # paraphrasing from training data. Returns "" on miss/timeout/disabled (graceful).
+    refs = await mcp_refs.fetch_step_refs(request.step, request.passage)
+    if refs:
+        system += f"\n\n{refs}"
 
     msg = f"Passage: {request.passage}"
     if request.topic:

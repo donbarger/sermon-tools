@@ -32,6 +32,11 @@ def init_db():
                 updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS idx_sermons_user ON sermons(user_id);
+            CREATE TABLE IF NOT EXISTS mcp_cache (
+                key         TEXT PRIMARY KEY,
+                value       TEXT NOT NULL,
+                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
         """)
 
 
