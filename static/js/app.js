@@ -10,7 +10,7 @@ const TRANSLATIONS = {
     'header.support': 'Support This Ministry',
 
     'tab.research': 'Research',
-    'tab.write': 'Write',
+    'tab.write': 'Sermon Draft',
     'tab.evaluate': 'Evaluate',
     'tab.sermons': 'My Sermons',
     'tab.admin': 'Admin',
@@ -67,7 +67,7 @@ const TRANSLATIONS = {
     'btn.copy': 'Copy',
     'btn.word': 'Word',
     'btn.pdf': 'PDF',
-    'btn.useInWriter': 'Use in Sermon Writer →',
+    'btn.useInWriter': 'Use in Sermon Draft →',
     'research.placeholder': 'Research results will appear here.',
     'research.placeholderHint': 'Select a passage above and click <strong>Generate Research</strong> to begin.',
     'research.completeTitle': 'Research complete — 5 steps done',
@@ -76,7 +76,7 @@ const TRANSLATIONS = {
     'btn.downloadWord': 'Download Word',
     'btn.save': 'Save to My Sermons',
 
-    'write.heading': 'Sermon Writer',
+    'write.heading': 'Sermon Draft',
     'write.desc': 'Generate a complete sermon outline and draft. Add your research notes for a more grounded, text-driven result.',
     'write.passageLabel': 'Main Passage',
     'ph.writePassage': 'e.g. John 3:16–21',
@@ -222,7 +222,7 @@ const TRANSLATIONS = {
     'header.support': 'Apoye este ministerio',
 
     'tab.research': 'Investigar',
-    'tab.write': 'Redactar',
+    'tab.write': 'Borrador del sermón',
     'tab.evaluate': 'Evaluar',
     'tab.sermons': 'Mis sermones',
     'tab.admin': 'Admin',
@@ -279,7 +279,7 @@ const TRANSLATIONS = {
     'btn.copy': 'Copiar',
     'btn.word': 'Word',
     'btn.pdf': 'PDF',
-    'btn.useInWriter': 'Usar en el redactor de sermones →',
+    'btn.useInWriter': 'Usar en Borrador del sermón →',
     'research.placeholder': 'Los resultados de la investigación aparecerán aquí.',
     'research.placeholderHint': 'Seleccione un pasaje arriba y haga clic en <strong>Generar investigación</strong> para comenzar.',
     'research.completeTitle': 'Investigación completa — 5 pasos terminados',
@@ -288,7 +288,7 @@ const TRANSLATIONS = {
     'btn.downloadWord': 'Descargar Word',
     'btn.save': 'Guardar en Mis sermones',
 
-    'write.heading': 'Redactor de sermones',
+    'write.heading': 'Borrador del sermón',
     'write.desc': 'Genere un bosquejo y un borrador completos del sermón. Agregue sus notas de investigación para un resultado más fundamentado y basado en el texto.',
     'write.passageLabel': 'Pasaje principal',
     'ph.writePassage': 'p. ej. Juan 3:16–21',
@@ -619,7 +619,10 @@ function updateAuthUI() {
   const saveBtn = document.getElementById('save-sermon-btn');
   if (!area) return;
 
-  if (adminTabBtn) adminTabBtn.style.display = (currentUser && currentUser.is_admin) ? '' : 'none';
+  const showAdmin = !!(currentUser && currentUser.is_admin);
+  if (adminTabBtn) adminTabBtn.style.display = showAdmin ? '' : 'none';
+  // Admin-only UI (the auto-generate "Sermon Draft" tab + its entry points).
+  document.querySelectorAll('.admin-only').forEach(el => { el.style.display = showAdmin ? '' : 'none'; });
 
   applyAuthGate();
 

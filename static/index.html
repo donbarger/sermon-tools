@@ -74,8 +74,8 @@
       <button class="tab-btn active" data-tab="research" onclick="switchTab('research')">
         <span class="tab-icon">📖</span> <span data-i18n="tab.research">Research</span>
       </button>
-      <button class="tab-btn" data-tab="write" onclick="switchTab('write')">
-        <span class="tab-icon">✍️</span> <span data-i18n="tab.write">Write</span>
+      <button class="tab-btn admin-only" data-tab="write" id="tab-btn-write" onclick="switchTab('write')" style="display:none">
+        <span class="tab-icon">✍️</span> <span data-i18n="tab.write">Sermon Draft</span>
       </button>
       <button class="tab-btn" data-tab="evaluate" onclick="switchTab('evaluate')">
         <span class="tab-icon">🔍</span> <span data-i18n="tab.evaluate">Evaluate</span>
@@ -265,8 +265,8 @@
               </button>
               <button class="btn-export" onclick="exportResearch('docx')" data-i18n="btn.word">Word</button>
               <button class="btn-export" onclick="exportResearch('pdf')" data-i18n="btn.pdf">PDF</button>
-              <button class="btn-accent" onclick="useInWriter()" data-i18n="btn.useInWriter">
-                Use in Sermon Writer →
+              <button class="btn-accent admin-only" onclick="useInWriter()" data-i18n="btn.useInWriter" style="display:none">
+                Use in Sermon Draft →
               </button>
             </div>
           </div>
@@ -286,7 +286,7 @@
             <div class="complete-actions">
               <button class="btn-export" onclick="exportResearch('pdf')" data-i18n="btn.downloadPdf">Download PDF</button>
               <button class="btn-export" onclick="exportResearch('docx')" data-i18n="btn.downloadWord">Download Word</button>
-              <button class="btn-accent" onclick="useInWriter()" data-i18n="btn.useInWriter">Use in Sermon Writer →</button>
+              <button class="btn-accent admin-only" onclick="useInWriter()" data-i18n="btn.useInWriter" style="display:none">Use in Sermon Draft →</button>
               <button class="btn-save" id="save-sermon-btn" onclick="saveSermon()" style="display:none" data-i18n="btn.save">Save to My Sermons</button>
             </div>
           </div>
