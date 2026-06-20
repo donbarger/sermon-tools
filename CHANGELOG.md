@@ -2,6 +2,10 @@
 
 Most recent at top. Versioning is loose — this is a living app, shipped continuously.
 
+## v0.18 — Localized Bible book names in Spanish
+
+- In Spanish mode the book picker now shows Spanish names (Numbers → Números, Psalms → Salmos, 1 John → 1 Juan, Song of Solomon → Cantares, …) and the passage reference shown in the loading view, Scripture panel, and completion title is localized too. The `<option>` **value stays English** so the verse APIs and USFM mapping are unaffected — only the display is translated.
+
 ## v0.17 — Sign-in required + landing page
 
 - **Sermon Tools is now sign-in-only.** Signed-out visitors see a **landing page** (logo, tagline, a short explanation of what the tool does — Research/Write/Evaluate — and a Google sign-in button); the tool's nav + panels are hidden until they sign in. The EN|ES toggle works on the landing page so the explanation is bilingual.

@@ -526,6 +526,7 @@ function applyLang(lang) {
   });
 
   rebuildTranslationOptions(currentLang);
+  rebuildBookOptions(currentLang);
 
   const enBtn = document.getElementById('lang-en');
   const esBtn = document.getElementById('lang-es');
@@ -893,6 +894,59 @@ const CHAPTER_COUNTS = {};
   CHAPTER_COUNTS[name] = count;
 });
 
+// Spanish display names for the 66 books. The <option> VALUE stays English (the
+// verse APIs + USFM mapping need canonical English names); only the label and the
+// reference shown to the pastor are localized.
+const BOOK_ES = {
+  'Genesis': 'Génesis', 'Exodus': 'Éxodo', 'Leviticus': 'Levítico', 'Numbers': 'Números',
+  'Deuteronomy': 'Deuteronomio', 'Joshua': 'Josué', 'Judges': 'Jueces', 'Ruth': 'Rut',
+  '1 Samuel': '1 Samuel', '2 Samuel': '2 Samuel', '1 Kings': '1 Reyes', '2 Kings': '2 Reyes',
+  '1 Chronicles': '1 Crónicas', '2 Chronicles': '2 Crónicas', 'Ezra': 'Esdras', 'Nehemiah': 'Nehemías',
+  'Esther': 'Ester', 'Job': 'Job', 'Psalms': 'Salmos', 'Proverbs': 'Proverbios',
+  'Ecclesiastes': 'Eclesiastés', 'Song of Solomon': 'Cantares', 'Isaiah': 'Isaías', 'Jeremiah': 'Jeremías',
+  'Lamentations': 'Lamentaciones', 'Ezekiel': 'Ezequiel', 'Daniel': 'Daniel', 'Hosea': 'Oseas',
+  'Joel': 'Joel', 'Amos': 'Amós', 'Obadiah': 'Abdías', 'Jonah': 'Jonás', 'Micah': 'Miqueas',
+  'Nahum': 'Nahúm', 'Habakkuk': 'Habacuc', 'Zephaniah': 'Sofonías', 'Haggai': 'Hageo',
+  'Zechariah': 'Zacarías', 'Malachi': 'Malaquías',
+  'Matthew': 'Mateo', 'Mark': 'Marcos', 'Luke': 'Lucas', 'John': 'Juan', 'Acts': 'Hechos',
+  'Romans': 'Romanos', '1 Corinthians': '1 Corintios', '2 Corinthians': '2 Corintios',
+  'Galatians': 'Gálatas', 'Ephesians': 'Efesios', 'Philippians': 'Filipenses', 'Colossians': 'Colosenses',
+  '1 Thessalonians': '1 Tesalonicenses', '2 Thessalonians': '2 Tesalonicenses', '1 Timothy': '1 Timoteo',
+  '2 Timothy': '2 Timoteo', 'Titus': 'Tito', 'Philemon': 'Filemón', 'Hebrews': 'Hebreos',
+  'James': 'Santiago', '1 Peter': '1 Pedro', '2 Peter': '2 Pedro', '1 John': '1 Juan',
+  '2 John': '2 Juan', '3 John': '3 Juan', 'Jude': 'Judas', 'Revelation': 'Apocalipsis',
+};
+
+// English book names, longest first — so "1 John" matches before "John" in a ref.
+const _BOOK_NAMES_BY_LEN = [...BIBLE_BOOKS.OT, ...BIBLE_BOOKS.NT]
+  .map(([n]) => n).sort((a, b) => b.length - a.length);
+
+// Localize a passage reference for DISPLAY only (keeps the English value the API uses).
+// "Numbers 3:16" -> "Números 3:16" when the UI is Spanish.
+function localizePassage(ref) {
+  if (currentLang !== 'es' || !ref) return ref;
+  for (const en of _BOOK_NAMES_BY_LEN) {
+    if (ref === en || ref.startsWith(en + ' ')) {
+      return (BOOK_ES[en] || en) + ref.slice(en.length);
+    }
+  }
+  return ref;
+}
+
+// Rebuild the book <select> with language-appropriate labels (English values).
+function rebuildBookOptions(lang) {
+  const sel = document.getElementById('research-book');
+  if (!sel) return;
+  const prev = sel.value;
+  const label = (en) => (lang === 'es' && BOOK_ES[en]) ? BOOK_ES[en] : en;
+  const opts = (arr) => arr.map(([en]) => `<option value="${esc(en)}">${esc(label(en))}</option>`).join('');
+  sel.innerHTML =
+    `<option value="">${esc(t('select.book'))}</option>` +
+    `<optgroup label="${esc(t('bible.ot'))}">${opts(BIBLE_BOOKS.OT)}</optgroup>` +
+    `<optgroup label="${esc(t('bible.nt'))}">${opts(BIBLE_BOOKS.NT)}</optgroup>`;
+  sel.value = prev;  // preserve the selected book (value is the English name)
+}
+
 function onBookChange() {
   const book = document.getElementById('research-book').value;
   const chapterSel = document.getElementById('research-chapter');
@@ -1044,13 +1098,13 @@ async function doResearch() {
   researchState.compiled  = '';
   researchState.passageData = null;
 
-  document.getElementById('loading-ref').textContent = passage;
+  document.getElementById('loading-ref').textContent = localizePassage(passage);
   showLoadingOverlay(true);
 
   // Fetch verbatim passage text (if a provider serves this translation) so the
   // research is grounded in exact wording and the pastor sees the passage.
   researchState.passageData = await fetchPassage(passage, researchState.translation);
-  renderScripturePanel('research-scripture', passage, researchState.passageData);
+  renderScripturePanel('research-scripture', localizePassage(passage), researchState.passageData);
   document.getElementById('step-progress').style.display = 'none';
   document.getElementById('research-complete').style.display = 'none';
   document.getElementById('research-actions').style.display = 'none';
@@ -1123,7 +1177,7 @@ function finishResearch() {
   document.getElementById('research-output-label').textContent = t('label.completeResearch');
   const completeTitle = document.querySelector('.complete-title');
   if (completeTitle) {
-    completeTitle.textContent = t('label.researchCompletePassage').replace('{passage}', researchState.passage);
+    completeTitle.textContent = t('label.researchCompletePassage').replace('{passage}', localizePassage(researchState.passage));
   }
 
   document.getElementById('step-progress').style.display = 'none';
@@ -1465,7 +1519,7 @@ async function doWrite() {
   // default. Misses (e.g. a Spanish-typed ref) just skip the panel/injection.
   const writeTranslation = researchState.translation || (BIBLE_VERSIONS[currentLang] || BIBLE_VERSIONS.en).default;
   const passageData = await fetchPassage(passage, writeTranslation);
-  renderScripturePanel('write-scripture', passage, passageData);
+  renderScripturePanel('write-scripture', localizePassage(passage), passageData);
 
   const body = {
     passage, title, audience, research_notes, sermon_length, style, lang: currentLang,
