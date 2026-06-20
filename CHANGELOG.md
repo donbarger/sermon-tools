@@ -2,6 +2,11 @@
 
 Most recent at top. Versioning is loose — this is a living app, shipped continuously.
 
+## v0.17 — Sign-in required + landing page
+
+- **Sermon Tools is now sign-in-only.** Signed-out visitors see a **landing page** (logo, tagline, a short explanation of what the tool does — Research/Write/Evaluate — and a Google sign-in button); the tool's nav + panels are hidden until they sign in. The EN|ES toggle works on the landing page so the explanation is bilingual.
+- **Backend enforcement:** every generating endpoint now requires a signed-in user (`_resolve_caller` returns `401` for anonymous), so the gate isn't just cosmetic. (Requires Google OAuth to be configured on the server.)
+
 ## v0.16 — Admin panel
 
 - An **Admin tab** (visible only to emails in `ADMIN_EMAILS`, default `dbarger@imb.org`) with a users table: name/email, joined, # sermons, total tokens + estimated cost, **block/unblock**, **per-user model assignment** (Sonnet 4.5 / Haiku 4.5 / GPT-5 mini / Gemini 2.5 Flash·Pro), and a drill-in to any user's saved sermons.

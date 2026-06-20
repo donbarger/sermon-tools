@@ -52,6 +52,23 @@
     </div>
   </header>
 
+  <!-- ── Landing / sign-in gate (shown when signed out) ── -->
+  <section id="landing" class="landing" style="display:none">
+    <div class="landing-inner">
+      <img src="https://www.faithbot.tools/imb-innovation-logo.png" alt="IMB Innovation" class="landing-logo" />
+      <h1 class="landing-title" data-i18n="landing.title">Sermon Tools</h1>
+      <p class="landing-tagline" data-i18n="header.tagline">AI-Assisted Biblical Research &amp; Preparation</p>
+      <p class="landing-intro" data-i18n="landing.intro">An AI-assisted workspace for biblical preaching.</p>
+      <ul class="landing-features">
+        <li><span class="lf-icon">📖</span><div><strong data-i18n="landing.f1t">Research</strong><span data-i18n="landing.f1">Study a passage in depth, grounded in real scholarship.</span></div></li>
+        <li><span class="lf-icon">✍️</span><div><strong data-i18n="landing.f2t">Write</strong><span data-i18n="landing.f2">Shape a complete sermon draft in your style and length.</span></div></li>
+        <li><span class="lf-icon">🔍</span><div><strong data-i18n="landing.f3t">Evaluate</strong><span data-i18n="landing.f3">Get a pastoral review of a sermon's biblical faithfulness.</span></div></li>
+      </ul>
+      <button class="btn-landing-signin" onclick="loginWithGoogle()" data-i18n="auth.signIn">Sign in with Google</button>
+      <p class="landing-note" data-i18n="landing.note">Sign in with your Google account to begin.</p>
+    </div>
+  </section>
+
   <nav class="tab-nav">
     <div class="tab-nav-inner">
       <button class="tab-btn active" data-tab="research" onclick="switchTab('research')">

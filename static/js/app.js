@@ -129,6 +129,16 @@ const TRANSLATIONS = {
     'auth.signIn': 'Sign in with Google',
     'auth.signOut': 'Sign out',
 
+    'landing.title': 'Sermon Tools',
+    'landing.intro': 'An AI-assisted workspace for biblical preaching. Research a passage with real scholarly grounding, shape a complete sermon draft, and evaluate it for biblical faithfulness — in English or Spanish, with Scripture quoted verbatim in your preferred translation.',
+    'landing.f1t': 'Research',
+    'landing.f1': 'Historical context, exegesis, cross-references, themes, and application — grounded in real scholarship.',
+    'landing.f2t': 'Write',
+    'landing.f2': 'A full outline and draft in your chosen preaching style and target length.',
+    'landing.f3t': 'Evaluate',
+    'landing.f3': 'A pastoral, five-dimension review of any sermon’s biblical groundedness.',
+    'landing.note': 'Sign in with your Google account to begin.',
+
     'settings.button': 'Settings',
     'settings.title': 'Settings',
     'settings.language': 'Language',
@@ -330,6 +340,16 @@ const TRANSLATIONS = {
 
     'auth.signIn': 'Iniciar sesión con Google',
     'auth.signOut': 'Cerrar sesión',
+
+    'landing.title': 'Sermon Tools',
+    'landing.intro': 'Un espacio de trabajo asistido por IA para la predicación bíblica. Investigue un pasaje con fundamento académico real, redacte un borrador completo del sermón y evalúe su fidelidad bíblica — en inglés o español, con la Escritura citada textualmente en su traducción preferida.',
+    'landing.f1t': 'Investigar',
+    'landing.f1': 'Contexto histórico, exégesis, referencias cruzadas, temas y aplicación — con fundamento académico real.',
+    'landing.f2t': 'Redactar',
+    'landing.f2': 'Un bosquejo y borrador completos en el estilo de predicación y la duración que elija.',
+    'landing.f3t': 'Evaluar',
+    'landing.f3': 'Una evaluación pastoral de cinco dimensiones del fundamento bíblico de un sermón.',
+    'landing.note': 'Inicie sesión con su cuenta de Google para comenzar.',
 
     'settings.button': 'Configuración',
     'settings.title': 'Configuración',
@@ -600,6 +620,8 @@ function updateAuthUI() {
 
   if (adminTabBtn) adminTabBtn.style.display = (currentUser && currentUser.is_admin) ? '' : 'none';
 
+  applyAuthGate();
+
   if (currentUser) {
     area.innerHTML = `
       <div class="auth-user">
@@ -615,6 +637,18 @@ function updateAuthUI() {
     if (sermonsTabBtn) sermonsTabBtn.style.display = 'none';
     if (saveBtn) saveBtn.style.display = 'none';
   }
+}
+
+// Sign-in gate: signed-out visitors see only the landing page; the tool
+// (nav + panels) is hidden until they sign in. Backend also enforces this.
+function applyAuthGate() {
+  const signedIn = !!currentUser;
+  const landing = document.getElementById('landing');
+  const nav = document.querySelector('.tab-nav');
+  const main = document.querySelector('.main-content');
+  if (landing) landing.style.display = signedIn ? 'none' : '';
+  if (nav) nav.style.display = signedIn ? '' : 'none';
+  if (main) main.style.display = signedIn ? '' : 'none';
 }
 
 function loginWithGoogle() {
@@ -1541,6 +1575,7 @@ function esc(s) {
 
 document.addEventListener('DOMContentLoaded', () => {
   applyLang(resolveLang());
+  applyAuthGate();   // default to the landing page until auth resolves
   loadVerbatimTranslations();
   checkAuth();
 

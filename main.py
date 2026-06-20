@@ -203,15 +203,13 @@ def require_admin(http: Request) -> dict:
 
 
 def _resolve_caller(http: Request):
-    """For generating endpoints: returns (user_id, model) for the signed-in user
-    (or (None, default model) when anonymous). Raises 403 if the user is blocked.
-    Anonymous users are always allowed (the tool is public)."""
+    """For generating endpoints: require a signed-in user. Returns (user_id,
+    model). Raises 401 if not signed in (the tool is sign-in-only), 403 if the
+    user is blocked. Per-user assigned model wins over the global default."""
     uid = auth.get_optional_user_id(http)
-    if not uid:
-        return None, MODEL
-    user = db.get_user(uid)
+    user = db.get_user(uid) if uid else None
     if not user:
-        return None, MODEL
+        raise HTTPException(status_code=401, detail="Please sign in to use Sermon Tools.")
     if user.get("blocked"):
         raise HTTPException(status_code=403, detail="Your access has been suspended. Please contact the administrator.")
     return uid, (user.get("assigned_model") or MODEL)

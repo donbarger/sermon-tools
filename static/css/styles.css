@@ -112,6 +112,65 @@ body {
   .btn-support { display: none; }
 }
 
+/* ── Landing / sign-in gate ──────────────────────────────────────────────────── */
+.landing {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem 4rem;
+  text-align: center;
+}
+.landing-logo { height: 56px; width: auto; margin-bottom: 1rem; }
+.landing-title {
+  font-size: 2.2rem;
+  color: var(--ink);
+  margin: 0 0 0.25rem;
+}
+.landing-tagline {
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0 0 1.5rem;
+}
+.landing-intro {
+  color: var(--ink);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0 auto 2rem;
+  max-width: 560px;
+}
+.landing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto 2.25rem;
+  max-width: 520px;
+  text-align: left;
+  display: grid;
+  gap: 0.9rem;
+}
+.landing-features li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.landing-features .lf-icon { font-size: 1.3rem; line-height: 1.4; }
+.landing-features div { display: flex; flex-direction: column; }
+.landing-features strong { color: var(--ink); }
+.landing-features span { color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+.btn-landing-signin {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 26px;
+  padding: 13px 30px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-landing-signin:hover { background: var(--ink); }
+.btn-landing-signin:active { transform: translateY(1px); }
+.landing-note { color: var(--muted); font-size: 0.85rem; margin-top: 0.9rem; }
+
 /* ── Language Toggle ─────────────────────────────────────────────────────────── */
 .lang-toggle {
   display: flex;
