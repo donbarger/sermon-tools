@@ -1,73 +1,105 @@
 # Sermon Tools
 
-AI-assisted sermon preparation for evangelical pastors. Bilingual (English / Spanish), grounded in real biblical scholarship via the Study Bible MCP, and designed to support the full arc from passage to pulpit.
+AI-assisted sermon preparation for evangelical pastors. **Bilingual (English / Spanish)** — the whole
+interface *and* the AI's output — grounded in real biblical scholarship via the Study Bible MCP and in
+**verbatim Scripture** from the pastor's chosen translation, designed to support the full arc from
+passage to pulpit.
 
-**Live:** [https://sermon.donbarger.com](https://sermon.donbarger.com) (en) / [Spanish](https://sermon.donbarger.com/?lang=es) — same URL, language picker in the header
+**Live:** [https://sermon.donbarger.com](https://sermon.donbarger.com) — sign-in required.
+Switch languages with the **EN | ES** toggle in the header (or share `?lang=es`).
+
+> A workshop, not a sermon machine. The tool is built on the conviction that the pastor remains the
+> preacher; AI sharpens what the pastor already brings.
 
 ---
 
 ## What it is
 
-A workshop, not a sermon machine. The tool is built around the conviction that the pastor remains the preacher; AI sharpens what the pastor already brings.
+Sign in with Google to reach three tools plus a saved library:
 
-**The pastor's journey** (visible in-app as a workflow guide):
+1. **Research** — pick a passage (book / chapter / optional verses), a translation, optional topic and
+   context, and a brief depth (Concise or Expanded). Five steps stream in sequence: Historical &
+   Cultural Context → Text Exegesis → Cross-References → Theological Themes → Application. Steps 1–4
+   are **MCP-grounded** (LSJ Greek lexicon, Abbott-Smith, Tyndale Bible Dictionary, Aquifer notes); if
+   the MCP server is unavailable the step still runs, ungrounded. When a verbatim provider covers the
+   chosen translation, the exact passage text is shown in a **Scripture panel** and fed into the
+   prompts so quotations are accurate. Export to Word/PDF, or save to My Sermons.
+2. **Write** — passage plus optional title, congregation context, research notes, target length, and
+   preaching style. The tool builds the outline first, then writes the sermon **section by section**
+   (each section streamed in its own pass, so even a long sermon never hits the output-length ceiling).
+   Export to Word/PDF.
+3. **Evaluate** — paste a draft or upload a file (`.txt` / `.docx` / `.pdf`). Get a five-dimension
+   theological evaluation (biblical groundedness, doctrinal soundness, Gospel clarity, application,
+   overall). Export to Word/PDF.
 
-1. **Research** — enter a passage, walk through 5 streamed steps (Historical & Cultural Context → Text Exegesis → Cross-References → Theological Themes → Application), which auto-run in sequence. Steps 1–4 are MCP-grounded with LSJ Greek lexicon, Abbott-Smith, Tyndale Bible Dictionary, and Aquifer scholarly notes; if the MCP server is unavailable the step still runs, ungrounded.
-2. **Shape** — enter the passage, an optional title and congregation context, research notes to fold in, target length, and an optional preaching style. The tool first builds the sermon's outline, then writes it **section by section** (each section streamed in its own pass, so even a long sermon never hits the output-length ceiling). Edit the draft, save it to My Sermons, or send it to Evaluate.
-3. **Evaluate** — paste or upload a draft (or click *Evaluate this draft* directly from the Shaper). Get a 5-dimension theological evaluation with scores. Click ✨ *Revise sermon from evaluation* to get a revised version that addresses the critique. Re-evaluate to score the new draft.
-4. **Preach** — from My Sermons, tap 🎤 *Preach* to enter a mobile-first delivery view: dark theme, XL adjustable type, on-screen timer, scripture popups (click any verse reference to see it), wake-lock to keep the screen on, auto-hide chrome.
+**My Sermons** — your saved research sessions; click any entry to reload it.
 
-**My Sermons** is the library — searchable, organizable into series, taggable, with per-sermon actions: Preach · Print Research · Print Outline · Print Sermon · Print Eval · Create Images · Edit metadata. Print is a modal where pastors choose phases (checkboxes) + format (PDF or Word). Image gen produces per-type aspect ratios (3:4 coloring book page · 1:1 sermon illustration · 4:5 verse art · 1:1 social graphic) at ~$0.06 per image.
+**Settings** (⚙, per account) — preferred language, preferred translation, and default sermon
+length/style. Applied automatically on sign-in.
 
-**Admin panel** — for designated admin emails (set via `ADMIN_EMAILS` env), a per-user view: block/unblock, assign per-user model (Sonnet, Haiku, Gemini Flash, Gemini Pro, GPT-5 mini), see usage + cost estimate per user, drill into anyone's sermon library.
+**Admin panel** — for emails in `ADMIN_EMAILS`: a per-user view to block/unblock, assign a per-user
+model (Sonnet 4.5, Haiku 4.5, GPT-5 mini, Gemini 2.5 Flash/Pro), see token usage + estimated cost, and
+drill into a user's saved sermons. Blocked users are denied generation.
 
 ---
 
 ## Stack
 
 - **Backend:** FastAPI + httpx (async), SQLite (mounted volume in Docker), Caddy reverse proxy for TLS
-- **Frontend:** vanilla JS + custom CSS, marked.js for markdown, Google Fonts (Nunito Sans, Source Sans 3, Noto Sans for Greek/Hebrew)
-- **AI:** OpenRouter (default model: `anthropic/claude-haiku-4-5`, per-user override via admin)
-- **Image gen:** `google/gemini-2.5-flash-image` via OpenRouter chat/completions with `modalities: ["image","text"]`
-- **MCP grounding:** [`studybible-mcp.fly.dev`](https://github.com/djayatillake/studybible-mcp) — async client in `mcp_refs.py`, sequential tool calls (the server doesn't tolerate concurrent requests on the same session), 30-day SQLite cache
-- **Auth:** Google OAuth 2.0 (Authlib), session cookies signed with itsdangerous
-- **Verbatim Scripture:** `verses.py` provider registry — ESV API, NLT API (Tyndale), API.Bible, Biblia API. The chosen translation's exact text is fetched, shown to the pastor, and injected into the AI prompts. Env-gated + fail-soft (no key → that translation is AI-quoted). Verbatim today: ESV, NLT, KJV, NVI, RVR1960, NTV, LBLA, RVA, RVR1909, LEB, LSB, ASV.
+- **Frontend:** vanilla JS + custom CSS, marked.js for markdown. A `data-i18n` dictionary in `app.js`
+  drives the bilingual UI; the `lang` flag sent to each endpoint drives the language of AI output.
+- **Auth:** Google OAuth 2.0 (Authlib), session cookies signed with itsdangerous. **Sign-in is
+  required** — generating endpoints reject anonymous callers; signed-out visitors see a landing page.
+- **AI:** OpenRouter (default model `anthropic/claude-haiku-4-5`; per-user override via Admin). Each
+  call requests token/cost accounting, logged to `usage_log`.
+- **Verbatim Scripture:** `verses.py` provider registry — **ESV API, NLT API (Tyndale), API.Bible,
+  Biblia API**. The chosen translation's exact text is fetched, shown to the pastor, and injected into
+  the prompts. Env-gated + fail-soft (no key for a translation → it falls back to AI-quoted). Copyrighted
+  verse text is fetched live and not persisted. Verbatim today: ESV, NLT, KJV, NVI, RVR1960, NTV, LBLA,
+  RVA, RVR1909, LEB, LSB, ASV. (No free API: NIV, CSB, NASB, NKJV, RVC, TLA → AI-quoted.)
+- **MCP grounding:** [`studybible-mcp.fly.dev`](https://github.com/djayatillake/studybible-mcp) — async
+  client in `mcp_refs.py`, sequential tool calls, 30-day SQLite cache.
 
 ---
 
 ## Local setup
 
 ```bash
-git clone https://github.com/donbarger/sermon.git sermon-tools
+git clone https://github.com/donbarger/sermon-tools.git
 cd sermon-tools
-cp .env.example .env  # then fill in credentials
+cp .env.example .env   # then fill in credentials
 docker compose up -d
 open http://localhost:8000
 ```
 
-### Required `.env` keys
+### `.env` keys
 
 - `OPENROUTER_API_KEY` — required for any AI feature
 - `MODEL` — default model (recommend `anthropic/claude-haiku-4-5`)
-- `ADMIN_EMAILS` — comma-separated; these users auto-promote to admin on login
-- `ESV_API_KEY`, `APIBIBLE_API_KEY`, `BIBLIA_API_KEY` — verbatim Scripture providers (each optional; see `verses.py`)
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BACKEND_URL`, `SESSION_SECRET` — OAuth
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BACKEND_URL`, `SESSION_SECRET` — Google OAuth (required;
+  the app is sign-in-only)
+- `ADMIN_EMAILS` — comma-separated emails that get the Admin tab (default `dbarger@imb.org`)
+- `ESV_API_KEY`, `NLT_API_KEY`, `APIBIBLE_API_KEY`, `BIBLIA_API_KEY` — verbatim Scripture providers
+  (each optional; a translation is fetched verbatim only if its provider's key is set — see `verses.py`)
 - `MCP_ENABLED=true`, `MCP_BASE_URL=https://studybible-mcp.fly.dev/mcp/` — Study Bible MCP
 
 ---
 
 ## Deploy
 
+The repo's `deploy.sh` runs **on the Digital Ocean droplet** (`/opt/sermon-tools`):
+
 ```bash
-./deploy.sh
+# on the droplet
+cd /opt/sermon-tools && ./deploy.sh      # git pull origin main → docker compose build --no-cache → up -d
 ```
 
-This script:
-1. Commits + pushes to GitHub (`donbarger/sermon`)
-2. rsyncs to the Digital Ocean droplet at `/opt/sermon-tools/`, `docker compose build --no-cache && up -d`
-3. rsyncs to the Mac Studio mirror at `~/ai/sermon-tools/`
+Full flow from a workstation:
+1. Commit + push to GitHub (`donbarger/sermon-tools`).
+2. On the droplet: add any new keys to `/opt/sermon-tools/.env` (it's excluded from version control, so
+   secrets persist across deploys), then run `./deploy.sh`.
 
-The droplet's `.env` lives in place (excluded from rsync) so secrets persist across deploys.
+DB migrations (new columns, `usage_log`) run idempotently on container boot — existing data is preserved.
 
 ---
 
@@ -75,17 +107,17 @@ The droplet's `.env` lives in place (excluded from rsync) so secrets persist acr
 
 | File | Purpose |
 |---|---|
-| `main.py` | FastAPI routes — research / write / evaluate / refine / images / admin / sermon CRUD; system prompts |
-| `auth.py` | Google OAuth flow, session cookies, admin checks, blocked-user enforcement |
-| `db.py` | SQLite schema + helpers; idempotent migrations on every boot |
-| `mcp_refs.py` | Study Bible MCP client (HTTP+SSE), per-step tool dispatch, response filter, cache |
-| `static/index.html` | All DOM, including modals (print, images, metadata, step-download, eval) |
-| `static/js/app.js` | All client behavior — i18n, tab routing, streaming, autosave, image gen, preach mode, refinement |
-| `static/css/styles.css` | Visual system, including a `@media (max-width: 768px)` block for mobile |
+| `main.py` | FastAPI routes — research / write / evaluate / passage / settings / admin / sermon CRUD / export; system prompts; OpenRouter streaming + usage logging |
+| `auth.py` | Google OAuth flow, signed session cookies |
+| `db.py` | SQLite schema + helpers; idempotent migrations (`pref_*`, `blocked`, `assigned_model`, `usage_log`) on every boot |
+| `mcp_refs.py` | Study Bible MCP client (HTTP+SSE), per-step tool dispatch, response filter, 30-day cache |
+| `verses.py` | Verbatim Scripture provider registry (ESV / NLT / API.Bible / Biblia), USFM ref parsing, fail-soft fetch |
+| `static/index.html` | All DOM — landing page, three tool tabs, My Sermons, Admin, Settings modal, Scripture panel |
+| `static/js/app.js` | All client behavior — i18n dictionary + language toggle, sign-in gate, tab routing, streaming, verbatim fetch, settings, admin |
+| `static/css/styles.css` | Visual system, including a mobile `@media` block |
 
 ---
 
 ## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — release notes per shipped feature
-- [User flow diagram](https://sermon.donbarger.com) — also rendered as a FigJam diagram (link below)
