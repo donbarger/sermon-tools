@@ -2,6 +2,29 @@
 
 Most recent at top. Versioning is loose — this is a living app, shipped continuously.
 
+## v0.16 — Admin panel
+
+- An **Admin tab** (visible only to emails in `ADMIN_EMAILS`, default `dbarger@imb.org`) with a users table: name/email, joined, # sermons, total tokens + estimated cost, **block/unblock**, **per-user model assignment** (Sonnet 4.5 / Haiku 4.5 / GPT-5 mini / Gemini 2.5 Flash·Pro), and a drill-in to any user's saved sermons.
+- **Block enforcement:** a blocked (signed-in) user gets `403` on all generating endpoints; anonymous use is unaffected.
+- **Usage & cost tracking:** every generation now requests OpenRouter token/cost accounting and writes a `usage_log` row (user, feature, model, tokens, cost); the admin table shows per-user aggregates. New `blocked`/`assigned_model` columns on `users` + `usage_log` table (idempotent migration). New `/api/admin/*` endpoints (auth + admin-gated); `is_admin` added to `/api/auth/me`. Generating endpoints now resolve the caller's assigned model.
+
+## v0.15 — Per-user Settings
+
+- A **⚙ Settings** modal (signed-in users) saves **preferred language, translation, default sermon length, and default preaching style** to the account. New `pref_*` columns on `users` (idempotent migration), `GET`/`PUT /api/settings` (auth-gated).
+- On login, prefs auto-apply: language (precedence is now `?lang=` URL → account → localStorage → browser → English — a shared `?lang=` link still wins), and the saved translation/length/style become the picker defaults. Signed-out users keep the localStorage language behavior from v0.13.
+
+## v0.14 — Verbatim Scripture text (grounded quoting)
+
+- **Verse text is now fetched verbatim**, in the chosen translation, instead of being quoted from the model's memory (which could paraphrase or misquote — especially in Spanish). The exact text is (a) shown to the pastor in a **Scripture panel** above the research/draft, with attribution, and (b) injected into the AI prompts so research and sermons quote the real wording.
+- New `verses.py` — a **provider registry** (ESV API, API.Bible, Biblia API), env-gated and fail-soft: a translation is fetched verbatim only if a provider supports it *and* its key is configured; any miss silently falls back to AI-quoted text. Adding a new key later activates more translations with no code change. Copyrighted verse text is fetched live and **not persisted** (in-memory cache only).
+- Verbatim coverage with the four keys (ESV/NLT/API.Bible/Biblia): **ESV, NLT, KJV** (EN); **NVI, RVR1960, NTV, LBLA** (ES) + RVA, RVR1909; plus LEB, LSB, ASV. Still AI-quoted (no provider available): NIV, CSB, NASB, NKJV, RVC, TLA.
+- New endpoints `GET /api/passage` and `GET /api/verse-translations`; the translation picker marks verbatim-capable versions. Picker gains LEB/LSB/ASV (EN) and RVA (ES).
+
+## v0.13 — Bilingual Spanish restored (UI + AI results)
+
+- The entire interface and all AI output can switch to **Spanish** via an EN | ES header toggle (lost in the v0.8 redesign, now rebuilt). A `data-i18n` dictionary translates the UI; a `lang` flag sent to every generating endpoint makes research, sermons, and evaluations come back in Spanish. Language is remembered (`?lang=es` URL → localStorage → browser → English).
+- Spanish Bible versions in the picker: NVI (default), RVR1960, NTV, LBLA, RVC, TLA.
+
 ## v0.12 — Prompt-level length guidance (the durable anti-truncation fix)
 
 - Rather than leaning only on big token ceilings, each call now tells the model to size itself: expanded research steps target ~800–1,200 words (disciplined depth, no padding/exhaustive lists); sermon sections are told they're a fraction of the whole sermon and should sum to the requested target length, with short sections allowed to stay short. Keeps every call comfortably under its cap, so truncation shouldn't recur. If output ever still hits a cap, this is the lever to tune, not the cap.

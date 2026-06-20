@@ -25,6 +25,7 @@ load_dotenv()
 import db
 import auth
 import mcp_refs
+import verses
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -45,6 +46,19 @@ app.mount("/static", StaticFiles(directory=static_path), name="static")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 MODEL = os.getenv("MODEL", "anthropic/claude-sonnet-4-5")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+# Admin: emails (comma-separated) that get the admin panel.
+ADMIN_EMAILS = {e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "dbarger@imb.org").split(",") if e.strip()}
+
+# Models an admin can assign per user (label → OpenRouter id).
+MODEL_CHOICES = [
+    {"id": "anthropic/claude-sonnet-4-5", "label": "Claude Sonnet 4.5"},
+    {"id": "anthropic/claude-haiku-4-5",  "label": "Claude Haiku 4.5"},
+    {"id": "openai/gpt-5-mini",           "label": "GPT-5 mini"},
+    {"id": "google/gemini-2.5-flash",     "label": "Gemini 2.5 Flash"},
+    {"id": "google/gemini-2.5-pro",       "label": "Gemini 2.5 Pro"},
+]
+_VALID_MODEL_IDS = {m["id"] for m in MODEL_CHOICES} | {MODEL}
 
 # ─── System Prompts ───────────────────────────────────────────────────────────
 
@@ -121,6 +135,37 @@ Are applications drawn from the text? Are they specific and actionable? Do they 
 Be honest, constructive, and pastoral. Your goal is to help the pastor grow."""
 
 
+def _lang_directive(lang: Optional[str]) -> str:
+    """Extra system-prompt instruction so AI output is generated in the requested
+    language. English (the default) adds nothing; Spanish forces a full Spanish
+    response. Appended to whichever system prompt an endpoint is using."""
+    if (lang or "en").lower().startswith("es"):
+        return (
+            "\n\nIMPORTANT: Respond entirely in Spanish (neutral Latin American Spanish "
+            "suitable for a congregation). All headings, prose, terminology, and analysis "
+            "must be in Spanish. When quoting Scripture, use the pastor's preferred Spanish "
+            "version."
+        )
+    return ""
+
+
+def _passage_block(passage_text: Optional[str], attribution: Optional[str]) -> str:
+    """Prompt block carrying the verbatim passage text (when the frontend fetched
+    it). Grounds the model in the exact wording instead of its memory. Empty when
+    no verbatim text was available, so behavior is unchanged in that case."""
+    text = (passage_text or "").strip()
+    if not text:
+        return ""
+    block = (
+        "\n\nVERBATIM PASSAGE TEXT (use this exact wording whenever you quote the passage; "
+        "do not paraphrase it):\n"
+        f"{text}"
+    )
+    if attribution and attribution.strip():
+        block += f"\n[{attribution.strip()}]"
+    return block
+
+
 # ─── File Parsers ─────────────────────────────────────────────────────────────
 
 def extract_text_from_docx(file_bytes: bytes) -> str:
@@ -141,14 +186,64 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
         raise HTTPException(status_code=400, detail=f"Could not read PDF file: {e}")
 
 
+# ─── Admin / caller resolution ──────────────────────────────────────────────
+
+def is_admin(user: dict) -> bool:
+    return bool(user and (user.get("email") or "").lower() in ADMIN_EMAILS)
+
+
+def require_admin(http: Request) -> dict:
+    uid = auth.get_optional_user_id(http)
+    user = db.get_user(uid) if uid else None
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+
+def _resolve_caller(http: Request):
+    """For generating endpoints: returns (user_id, model) for the signed-in user
+    (or (None, default model) when anonymous). Raises 403 if the user is blocked.
+    Anonymous users are always allowed (the tool is public)."""
+    uid = auth.get_optional_user_id(http)
+    if not uid:
+        return None, MODEL
+    user = db.get_user(uid)
+    if not user:
+        return None, MODEL
+    if user.get("blocked"):
+        raise HTTPException(status_code=403, detail="Your access has been suspended. Please contact the administrator.")
+    return uid, (user.get("assigned_model") or MODEL)
+
+
+# ─── Usage logging ────────────────────────────────────────────────────────────
+
+def _record_usage(user_id, feature, model, usage):
+    """Persist token/cost accounting from an OpenRouter response. Best-effort —
+    never let a logging failure affect the user's request."""
+    if not usage:
+        return
+    try:
+        db.log_usage(
+            user_id, feature, model,
+            usage.get("prompt_tokens"), usage.get("completion_tokens"),
+            usage.get("total_tokens"), usage.get("cost"),
+        )
+    except Exception as e:
+        logger.warning("usage log failed: %s", e)
+
+
 # ─── Streaming Helper ─────────────────────────────────────────────────────────
 
 async def stream_openrouter(
-    system_prompt: str, user_message: str, max_tokens: int = 8192
+    system_prompt: str, user_message: str, max_tokens: int = 8192,
+    model: str = None, user_id: int = None, feature: str = None,
 ) -> StreamingResponse:
     if not OPENROUTER_API_KEY:
         raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY is not configured")
 
+    use_model = model or MODEL
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
@@ -157,13 +252,15 @@ async def stream_openrouter(
     }
 
     payload = {
-        "model": MODEL,
+        "model": use_model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
         ],
         "stream": True,
         "max_tokens": max_tokens,
+        # Ask OpenRouter to include token/cost accounting in the final chunk.
+        "usage": {"include": True},
     }
 
     async def generate():
@@ -171,6 +268,7 @@ async def stream_openrouter(
         # the read timeout is the max gap *between* chunks, not a total cap, so a
         # long generation won't be killed mid-stream.
         timeout = httpx.Timeout(connect=15.0, read=300.0, write=15.0, pool=15.0)
+        usage = None
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 async with client.stream(
@@ -194,7 +292,12 @@ async def stream_openrouter(
                             break
                         try:
                             chunk = json.loads(data)
-                            choice = chunk["choices"][0]
+                            if chunk.get("usage"):
+                                usage = chunk["usage"]
+                            choices = chunk.get("choices") or []
+                            if not choices:
+                                continue
+                            choice = choices[0]
                             if choice.get("finish_reason"):
                                 finish_reason = choice["finish_reason"]
                             delta = choice["delta"].get("content", "")
@@ -213,6 +316,8 @@ async def stream_openrouter(
         except Exception as e:
             logger.error(f"Streaming error: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        finally:
+            _record_usage(user_id, feature, use_model, usage)
 
     return StreamingResponse(
         generate(),
@@ -242,10 +347,13 @@ class WriteRequest(BaseModel):
     research_notes: Optional[str] = None
     sermon_length: str = "30-40 minutes"
     style: Optional[str] = None
+    lang: Optional[str] = "en"
+    passage_text: Optional[str] = None
+    passage_attribution: Optional[str] = None
 
 
 @app.post("/api/research")
-async def research(request: ResearchRequest):
+async def research(request: ResearchRequest, http: Request):
     if not request.passage.strip():
         raise HTTPException(status_code=400, detail="Scripture passage is required")
 
@@ -255,11 +363,12 @@ async def research(request: ResearchRequest):
     if request.notes:
         user_message += f"\nAdditional context: {request.notes}"
 
-    return await stream_openrouter(RESEARCH_SYSTEM_PROMPT, user_message)
+    uid, model = _resolve_caller(http)
+    return await stream_openrouter(RESEARCH_SYSTEM_PROMPT, user_message, model=model, user_id=uid, feature="research")
 
 
 @app.post("/api/write")
-async def write_sermon(request: WriteRequest):
+async def write_sermon(request: WriteRequest, http: Request):
     if not request.passage.strip():
         raise HTTPException(status_code=400, detail="Scripture passage is required")
 
@@ -290,7 +399,9 @@ DELIVERY GOAL:
 
 Build this sermon strictly according to these structural and stylistic guidelines. Let the selected approach shape everything — the outline, the pacing, the language, and how truth is revealed."""
 
-    return await stream_openrouter(WRITE_SYSTEM_PROMPT, user_message, max_tokens=16000)
+    system = WRITE_SYSTEM_PROMPT + _lang_directive(request.lang)
+    uid, model = _resolve_caller(http)
+    return await stream_openrouter(system, user_message, max_tokens=16000, model=model, user_id=uid, feature="write")
 
 
 # ─── Section-by-section sermon writing ──────────────────────────────────────────
@@ -315,12 +426,15 @@ def _write_context(req) -> str:
             f"\nSTYLE & VOICE:\n{s['style']}"
             f"\nDELIVERY GOAL:\n{s['delivery']}"
         )
+    ctx += _passage_block(getattr(req, "passage_text", None), getattr(req, "passage_attribution", None))
     return ctx
 
 
-async def complete_openrouter(system_prompt: str, user_message: str, max_tokens: int = 1024) -> str:
+async def complete_openrouter(system_prompt: str, user_message: str, max_tokens: int = 1024,
+                              model: str = None, user_id: int = None, feature: str = None) -> str:
     if not OPENROUTER_API_KEY:
         raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY is not configured")
+    use_model = model or MODEL
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
@@ -328,12 +442,13 @@ async def complete_openrouter(system_prompt: str, user_message: str, max_tokens:
         "X-Title": "Sermon Tools",
     }
     payload = {
-        "model": MODEL,
+        "model": use_model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
         ],
         "max_tokens": max_tokens,
+        "usage": {"include": True},
     }
     timeout = httpx.Timeout(connect=15.0, read=120.0, write=15.0, pool=15.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
@@ -343,7 +458,9 @@ async def complete_openrouter(system_prompt: str, user_message: str, max_tokens:
         if resp.status_code != 200:
             logger.error(f"OpenRouter error {resp.status_code}: {resp.text[:500]}")
             raise HTTPException(status_code=502, detail=f"AI service error: {resp.status_code}")
-        return resp.json()["choices"][0]["message"]["content"]
+        data = resp.json()
+        _record_usage(user_id, feature, use_model, data.get("usage"))
+        return data["choices"][0]["message"]["content"]
 
 
 WRITE_OUTLINE_SYSTEM = WRITE_SYSTEM_PROMPT + """
@@ -375,10 +492,13 @@ def _parse_outline(raw: str) -> List[str]:
 
 
 @app.post("/api/write/outline")
-async def write_outline(request: WriteRequest):
+async def write_outline(request: WriteRequest, http: Request):
     if not request.passage.strip():
         raise HTTPException(status_code=400, detail="Scripture passage is required")
-    raw = await complete_openrouter(WRITE_OUTLINE_SYSTEM, _write_context(request), max_tokens=1024)
+    uid, model = _resolve_caller(http)
+    system = WRITE_OUTLINE_SYSTEM + _lang_directive(request.lang)
+    raw = await complete_openrouter(system, _write_context(request), max_tokens=1024,
+                                    model=model, user_id=uid, feature="write_outline")
     sections = _parse_outline(raw)
     if not sections:
         raise HTTPException(status_code=502, detail="Could not generate an outline. Please try again.")
@@ -395,10 +515,13 @@ class WriteSectionRequest(BaseModel):
     outline: List[str] = []
     section_title: str
     prior_sections: Optional[str] = None
+    lang: Optional[str] = "en"
+    passage_text: Optional[str] = None
+    passage_attribution: Optional[str] = None
 
 
 @app.post("/api/write/section")
-async def write_section(request: WriteSectionRequest):
+async def write_section(request: WriteSectionRequest, http: Request):
     if not request.passage.strip():
         raise HTTPException(status_code=400, detail="Scripture passage is required")
     if not request.section_title.strip():
@@ -411,13 +534,17 @@ async def write_section(request: WriteSectionRequest):
         msg += f"\n\nSections written so far (for continuity — do not repeat these):\n{request.prior_sections}"
     msg += f"\n\nNow write this one section in full:\n{request.section_title}"
 
-    return await stream_openrouter(WRITE_SECTION_SYSTEM, msg, max_tokens=8192)
+    system = WRITE_SECTION_SYSTEM + _lang_directive(request.lang)
+    uid, model = _resolve_caller(http)
+    return await stream_openrouter(system, msg, max_tokens=8192, model=model, user_id=uid, feature="write_section")
 
 
 @app.post("/api/evaluate")
 async def evaluate_sermon(
+    http: Request,
     sermon_text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
+    lang: Optional[str] = Form("en"),
 ):
     text = ""
 
@@ -440,7 +567,10 @@ async def evaluate_sermon(
     if len(text.strip()) < 100:
         raise HTTPException(status_code=400, detail="Sermon text is too short to evaluate meaningfully")
 
-    return await stream_openrouter(EVALUATE_SYSTEM_PROMPT, f"Please evaluate this sermon:\n\n{text}")
+    system = EVALUATE_SYSTEM_PROMPT + _lang_directive(lang)
+    uid, model = _resolve_caller(http)
+    return await stream_openrouter(system, f"Please evaluate this sermon:\n\n{text}",
+                                   model=model, user_id=uid, feature="evaluate")
 
 
 # ─── Research Steps ──────────────────────────────────────────────────────────
@@ -488,10 +618,13 @@ class ResearchStepRequest(BaseModel):
     prior_steps: Optional[str] = None
     translation: Optional[str] = None
     brief_type: Optional[str] = None
+    lang: Optional[str] = "en"
+    passage_text: Optional[str] = None
+    passage_attribution: Optional[str] = None
 
 
 @app.post("/api/research/step")
-async def research_step(request: ResearchStepRequest):
+async def research_step(request: ResearchStepRequest, http: Request):
     if not request.passage.strip():
         raise HTTPException(status_code=400, detail="Scripture passage is required")
     step_def = STEP_MAP.get(request.step)
@@ -514,6 +647,9 @@ async def research_step(request: ResearchStepRequest):
     if refs:
         system += f"\n\n{refs}"
 
+    system += _lang_directive(request.lang)
+    system += _passage_block(request.passage_text, request.passage_attribution)
+
     msg = f"Passage: {request.passage}"
     if request.topic:
         msg += f"\nTopic focus: {request.topic}"
@@ -524,7 +660,26 @@ async def research_step(request: ResearchStepRequest):
     msg += f"\n\nNow complete Step {request.step}: {step_def['title']}."
 
     # 16k so an expanded-brief step (the longest single output in the app) doesn't truncate.
-    return await stream_openrouter(system, msg, max_tokens=16000)
+    uid, model = _resolve_caller(http)
+    return await stream_openrouter(system, msg, max_tokens=16000, model=model, user_id=uid, feature="research_step")
+
+
+# ─── Verbatim Scripture text ────────────────────────────────────────────────────
+
+@app.get("/api/passage")
+async def get_passage(ref: str, translation: str):
+    """Verbatim passage text for the chosen translation, when a configured
+    provider can serve it. Returns {} (HTTP 200) on a miss so the frontend
+    silently falls back to model-quoted Scripture."""
+    result = await verses.fetch_passage(ref, translation)
+    return result or {}
+
+
+@app.get("/api/verse-translations")
+async def verse_translations():
+    """Translation codes that can be served verbatim given the configured keys —
+    lets the UI mark those options. Grows automatically if more keys are added."""
+    return {"verbatim": sorted(verses.verbatim_capable())}
 
 
 # ─── Auth Routes ──────────────────────────────────────────────────────────────
@@ -577,13 +732,103 @@ async def get_me(request: Request):
     user = db.get_user(uid)
     if not user:
         return {"user": None}
-    return {"user": {"id": user["id"], "name": user["name"], "email": user["email"], "picture": user["picture"]}}
+    return {"user": {"id": user["id"], "name": user["name"], "email": user["email"],
+                     "picture": user["picture"], "is_admin": is_admin(user)}}
 
 
 @app.post("/api/auth/logout")
 async def logout(response: Response):
     response.delete_cookie(auth.SESSION_COOKIE)
     return {"ok": True}
+
+
+# ─── User Settings ────────────────────────────────────────────────────────────
+
+class SettingsRequest(BaseModel):
+    lang: Optional[str] = None
+    translation: Optional[str] = None
+    length: Optional[str] = None
+    style: Optional[str] = None
+
+
+def _settings_payload(user: dict) -> dict:
+    return {
+        "lang": user.get("pref_lang"),
+        "translation": user.get("pref_translation"),
+        "length": user.get("pref_length"),
+        "style": user.get("pref_style"),
+    }
+
+
+@app.get("/api/settings")
+async def get_settings(request: Request):
+    uid = auth.require_user_id(request)
+    user = db.get_user(uid)
+    if not user:
+        raise HTTPException(404, "User not found")
+    return _settings_payload(user)
+
+
+@app.put("/api/settings")
+async def put_settings(request: Request, body: SettingsRequest):
+    uid = auth.require_user_id(request)
+    prefs = {}
+    if body.lang is not None:
+        prefs["pref_lang"] = "es" if str(body.lang).lower().startswith("es") else "en"
+    if body.translation is not None:
+        prefs["pref_translation"] = body.translation.strip()[:20] or None
+    if body.length is not None:
+        prefs["pref_length"] = body.length.strip()[:40] or None
+    if body.style is not None:
+        prefs["pref_style"] = body.style.strip()[:60] or None
+    db.update_user_prefs(uid, **prefs)
+    user = db.get_user(uid)
+    return _settings_payload(user)
+
+
+# ─── Admin ────────────────────────────────────────────────────────────────────
+
+class BlockRequest(BaseModel):
+    blocked: bool
+
+
+class ModelRequest(BaseModel):
+    model: Optional[str] = None
+
+
+@app.get("/api/admin/models")
+async def admin_models(request: Request):
+    require_admin(request)
+    return {"models": MODEL_CHOICES, "default": MODEL}
+
+
+@app.get("/api/admin/users")
+async def admin_users(request: Request):
+    require_admin(request)
+    return db.list_users_admin()
+
+
+@app.post("/api/admin/users/{user_id}/block")
+async def admin_block(request: Request, user_id: int, body: BlockRequest):
+    require_admin(request)
+    db.set_blocked(user_id, body.blocked)
+    return {"ok": True, "blocked": body.blocked}
+
+
+@app.post("/api/admin/users/{user_id}/model")
+async def admin_set_model(request: Request, user_id: int, body: ModelRequest):
+    require_admin(request)
+    model = body.model or None
+    if model and model not in _VALID_MODEL_IDS:
+        raise HTTPException(status_code=400, detail="Unknown model")
+    db.set_assigned_model(user_id, model)
+    return {"ok": True, "model": model}
+
+
+@app.get("/api/admin/users/{user_id}/sermons")
+async def admin_user_sermons(request: Request, user_id: int):
+    require_admin(request)
+    return db.list_sermons(user_id)
 
 
 # ─── Sermon Save/Load Routes ──────────────────────────────────────────────────

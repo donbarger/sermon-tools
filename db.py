@@ -37,7 +37,37 @@ def init_db():
                 value       TEXT NOT NULL,
                 created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS usage_log (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id           INTEGER,
+                feature           TEXT,
+                model             TEXT,
+                prompt_tokens     INTEGER DEFAULT 0,
+                completion_tokens INTEGER DEFAULT 0,
+                total_tokens      INTEGER DEFAULT 0,
+                cost              REAL DEFAULT 0,
+                created_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_usage_user ON usage_log(user_id);
         """)
+        _migrate(conn)
+
+
+# Columns added idempotently on every boot (ALTER TABLE can't be in executescript
+# with IF NOT EXISTS, so we check PRAGMA and add what's missing).
+PREF_COLUMNS = ("pref_lang", "pref_translation", "pref_length", "pref_style")
+# (column, SQL type/default) for admin fields.
+ADMIN_COLUMNS = (("blocked", "INTEGER DEFAULT 0"), ("assigned_model", "TEXT"))
+
+
+def _migrate(conn):
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
+    for col in PREF_COLUMNS:
+        if col not in existing:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT")
+    for col, decl in ADMIN_COLUMNS:
+        if col not in existing:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {col} {decl}")
 
 
 @contextmanager
@@ -73,6 +103,63 @@ def get_user(user_id: int) -> dict | None:
     with _conn() as conn:
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         return dict(row) if row else None
+
+
+def update_user_prefs(user_id: int, **prefs) -> None:
+    updates = {k: v for k, v in prefs.items() if k in PREF_COLUMNS}
+    if not updates:
+        return
+    set_clause = ", ".join(f"{k}=?" for k in updates)
+    values = list(updates.values()) + [user_id]
+    with _conn() as conn:
+        conn.execute(f"UPDATE users SET {set_clause} WHERE id=?", values)
+
+
+# ── Admin / usage ───────────────────────────────────────────────────────────
+
+def set_blocked(user_id: int, blocked: bool) -> None:
+    with _conn() as conn:
+        conn.execute("UPDATE users SET blocked=? WHERE id=?", (1 if blocked else 0, user_id))
+
+
+def set_assigned_model(user_id: int, model: str | None) -> None:
+    with _conn() as conn:
+        conn.execute("UPDATE users SET assigned_model=? WHERE id=?", (model or None, user_id))
+
+
+def log_usage(user_id, feature, model, prompt_tokens, completion_tokens, total_tokens, cost) -> None:
+    with _conn() as conn:
+        conn.execute(
+            "INSERT INTO usage_log (user_id, feature, model, prompt_tokens, completion_tokens, total_tokens, cost) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, feature, model, prompt_tokens or 0, completion_tokens or 0, total_tokens or 0, cost or 0),
+        )
+
+
+def list_users_admin() -> list[dict]:
+    """All users with sermon counts and aggregate usage — for the admin panel."""
+    with _conn() as conn:
+        rows = conn.execute("""
+            SELECT u.id, u.email, u.name, u.picture, u.created_at,
+                   u.blocked, u.assigned_model,
+                   (SELECT COUNT(*) FROM sermons s WHERE s.user_id = u.id)            AS sermon_count,
+                   COALESCE((SELECT SUM(total_tokens) FROM usage_log l WHERE l.user_id = u.id), 0) AS total_tokens,
+                   COALESCE((SELECT SUM(cost)         FROM usage_log l WHERE l.user_id = u.id), 0) AS total_cost,
+                   (SELECT MAX(created_at) FROM usage_log l WHERE l.user_id = u.id)   AS last_activity
+            FROM users u
+            ORDER BY u.created_at DESC
+        """).fetchall()
+        return [dict(r) for r in rows]
+
+
+def user_usage(user_id: int) -> dict:
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS calls, COALESCE(SUM(total_tokens),0) AS total_tokens, "
+            "COALESCE(SUM(cost),0) AS total_cost FROM usage_log WHERE user_id=?",
+            (user_id,),
+        ).fetchone()
+        return dict(row)
 
 
 def list_sermons(user_id: int) -> list[dict]:

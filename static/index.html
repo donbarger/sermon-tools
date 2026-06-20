@@ -36,11 +36,15 @@
         <img src="https://www.faithbot.tools/imb-innovation-logo.png" alt="IMB Innovation" class="logo" />
         <div class="title-block">
           <span class="app-name">Sermon Tools</span>
-          <span class="app-tagline">AI-Assisted Biblical Research &amp; Preparation</span>
+          <span class="app-tagline" data-i18n="header.tagline">AI-Assisted Biblical Research &amp; Preparation</span>
         </div>
       </div>
       <div class="header-right">
-        <a href="https://www.imb.org/give/project/innovation-ministry/" target="_blank" rel="noopener" class="btn-support">Support This Ministry</a>
+        <div class="lang-toggle" role="group" aria-label="Language">
+          <button id="lang-en" class="active" onclick="setLang('en')">EN</button>
+          <button id="lang-es" onclick="setLang('es')">ES</button>
+        </div>
+        <a href="https://www.imb.org/give/project/innovation-ministry/" target="_blank" rel="noopener" class="btn-support" data-i18n="header.support">Support This Ministry</a>
         <div id="auth-area" class="auth-area">
           <!-- populated by JS -->
         </div>
@@ -51,16 +55,19 @@
   <nav class="tab-nav">
     <div class="tab-nav-inner">
       <button class="tab-btn active" data-tab="research" onclick="switchTab('research')">
-        <span class="tab-icon">📖</span> Research
+        <span class="tab-icon">📖</span> <span data-i18n="tab.research">Research</span>
       </button>
       <button class="tab-btn" data-tab="write" onclick="switchTab('write')">
-        <span class="tab-icon">✍️</span> Write
+        <span class="tab-icon">✍️</span> <span data-i18n="tab.write">Write</span>
       </button>
       <button class="tab-btn" data-tab="evaluate" onclick="switchTab('evaluate')">
-        <span class="tab-icon">🔍</span> Evaluate
+        <span class="tab-icon">🔍</span> <span data-i18n="tab.evaluate">Evaluate</span>
       </button>
       <button class="tab-btn" data-tab="sermons" id="tab-btn-sermons" onclick="switchTab('sermons')" style="display:none">
-        <span class="tab-icon">📂</span> My Sermons
+        <span class="tab-icon">📂</span> <span data-i18n="tab.sermons">My Sermons</span>
+      </button>
+      <button class="tab-btn" data-tab="admin" id="tab-btn-admin" onclick="switchTab('admin')" style="display:none">
+        <span class="tab-icon">🛠️</span> <span data-i18n="tab.admin">Admin</span>
       </button>
     </div>
   </nav>
@@ -72,16 +79,16 @@
       <div class="panel-grid">
 
         <div class="panel-inputs">
-          <h2>Scripture Research</h2>
-          <p class="panel-desc">Select a passage, choose your translation, and click <strong>Generate Research</strong> to receive thorough biblical research grounded in exegesis, cross-references, theological themes, and application angles.</p>
+          <h2 data-i18n="research.heading">Scripture Research</h2>
+          <p class="panel-desc" data-i18n-html="research.desc">Select a passage, choose your translation, and click <strong>Generate Research</strong> to receive thorough biblical research grounded in exegesis, cross-references, theological themes, and application angles.</p>
 
           <!-- Passage: Book + Chapter -->
           <div class="form-group">
-            <label>Scripture Passage <span class="required">*</span></label>
+            <label><span data-i18n="research.passageLabel">Scripture Passage</span> <span class="required">*</span></label>
             <div class="passage-row-2">
               <select id="research-book" onchange="onBookChange()">
-                <option value="">— Book —</option>
-                <optgroup label="Old Testament">
+                <option value="" data-i18n="select.book">— Book —</option>
+                <optgroup label="Old Testament" data-i18n-label="bible.ot">
                   <option value="Genesis">Genesis</option>
                   <option value="Exodus">Exodus</option>
                   <option value="Leviticus">Leviticus</option>
@@ -122,7 +129,7 @@
                   <option value="Zechariah">Zechariah</option>
                   <option value="Malachi">Malachi</option>
                 </optgroup>
-                <optgroup label="New Testament">
+                <optgroup label="New Testament" data-i18n-label="bible.nt">
                   <option value="Matthew">Matthew</option>
                   <option value="Mark">Mark</option>
                   <option value="Luke">Luke</option>
@@ -153,56 +160,50 @@
                 </optgroup>
               </select>
               <select id="research-chapter" disabled>
-                <option value="">Ch.</option>
+                <option value="" data-i18n="select.chapter">Ch.</option>
               </select>
             </div>
           </div>
 
           <!-- Passage: Verse range (optional) -->
           <div class="form-group">
-            <label>Verses <span class="optional">optional</span></label>
+            <label><span data-i18n="research.versesLabel">Verses</span> <span class="optional" data-i18n="label.optional">optional</span></label>
             <div class="passage-row-2">
-              <input class="verse-input" type="number" id="research-verse-start" placeholder="From" min="1" max="176" />
-              <input class="verse-input" type="number" id="research-verse-end" placeholder="To" min="1" max="176" />
+              <input class="verse-input" type="number" id="research-verse-start" placeholder="From" data-i18n-ph="ph.from" min="1" max="176" />
+              <input class="verse-input" type="number" id="research-verse-end" placeholder="To" data-i18n-ph="ph.to" min="1" max="176" />
             </div>
           </div>
 
           <!-- Translation -->
           <div class="form-group">
-            <label for="research-translation">Preferred Translation</label>
+            <label for="research-translation" data-i18n="research.translationLabel">Preferred Translation</label>
             <select id="research-translation">
-              <option value="NKJV">NKJV — New King James Version</option>
-              <option value="ESV">ESV — English Standard Version</option>
-              <option value="CSB">CSB — Christian Standard Bible</option>
-              <option value="NIV">NIV — New International Version</option>
-              <option value="NLT" selected>NLT — New Living Translation</option>
-              <option value="KJV">KJV — King James Version</option>
-              <option value="NASB">NASB — New American Standard Bible</option>
+              <!-- options populated by JS (language-dependent) -->
             </select>
           </div>
 
           <!-- Topic + Notes (unchanged ids) -->
           <div class="form-group">
-            <label for="research-topic">Topic Focus <span class="optional">optional</span></label>
-            <input type="text" id="research-topic" placeholder="e.g. God's grace, spiritual warfare, anxiety" autocomplete="off" />
+            <label for="research-topic"><span data-i18n="research.topicLabel">Topic Focus</span> <span class="optional" data-i18n="label.optional">optional</span></label>
+            <input type="text" id="research-topic" placeholder="e.g. God's grace, spiritual warfare, anxiety" data-i18n-ph="ph.topic" autocomplete="off" />
           </div>
 
           <div class="form-group">
-            <label for="research-notes">Additional Context <span class="optional">optional</span></label>
-            <textarea id="research-notes" rows="3" placeholder="Series theme, congregation context, specific angle you're exploring..."></textarea>
+            <label for="research-notes"><span data-i18n="research.notesLabel">Additional Context</span> <span class="optional" data-i18n="label.optional">optional</span></label>
+            <textarea id="research-notes" rows="3" placeholder="Series theme, congregation context, specific angle you're exploring..." data-i18n-ph="ph.notes"></textarea>
           </div>
 
           <!-- Brief type toggle -->
           <div class="form-group">
-            <label>Research Brief</label>
+            <label data-i18n="research.briefLabel">Research Brief</label>
             <div class="brief-toggle">
-              <button id="brief-concise" class="active" onclick="setBriefType('concise')">Concise Brief</button>
-              <button id="brief-expanded" onclick="setBriefType('expanded')">Expanded Brief</button>
+              <button id="brief-concise" class="active" onclick="setBriefType('concise')" data-i18n="brief.concise">Concise Brief</button>
+              <button id="brief-expanded" onclick="setBriefType('expanded')" data-i18n="brief.expanded">Expanded Brief</button>
             </div>
           </div>
 
           <div class="btn-row">
-            <button class="btn-primary" id="research-btn" onclick="doResearch()">
+            <button class="btn-primary" id="research-btn" onclick="doResearch()" data-i18n="btn.generateResearch">
               Generate Research
             </button>
           </div>
@@ -212,7 +213,7 @@
 
           <!-- Research Loading Overlay -->
           <div id="research-loading" class="research-loading-overlay" style="display:none">
-            <div class="loading-header">Preparing Sermon Research</div>
+            <div class="loading-header" data-i18n="loading.title">Preparing Sermon Research</div>
             <div class="loading-passage-ref" id="loading-ref"></div>
             <div class="book-animation" role="img" aria-label="Animated open book">
               <div class="book-cover"></div>
@@ -221,13 +222,13 @@
               <div class="book-page"></div>
               <div class="book-page"></div>
             </div>
-            <p class="loading-disclaimer">Our AI Team of Biblical Scholars is working on your sermon research. Give them a few minutes.</p>
+            <p class="loading-disclaimer" data-i18n="loading.disclaimer">Our AI Team of Biblical Scholars is working on your sermon research. Give them a few minutes.</p>
             <ul class="loading-steps">
-              <li class="loading-step-item" id="loading-step-1"><span class="step-circle"></span>Historical &amp; Cultural Context</li>
-              <li class="loading-step-item" id="loading-step-2"><span class="step-circle"></span>Textual Exegesis</li>
-              <li class="loading-step-item" id="loading-step-3"><span class="step-circle"></span>Cross References &amp; Connections</li>
-              <li class="loading-step-item" id="loading-step-4"><span class="step-circle"></span>Theological Themes</li>
-              <li class="loading-step-item" id="loading-step-5"><span class="step-circle"></span>Application &amp; Sermon Angles</li>
+              <li class="loading-step-item" id="loading-step-1"><span class="step-circle"></span><span data-i18n="loading.step1">Historical &amp; Cultural Context</span></li>
+              <li class="loading-step-item" id="loading-step-2"><span class="step-circle"></span><span data-i18n="loading.step2">Textual Exegesis</span></li>
+              <li class="loading-step-item" id="loading-step-3"><span class="step-circle"></span><span data-i18n="loading.step3">Cross References &amp; Connections</span></li>
+              <li class="loading-step-item" id="loading-step-4"><span class="step-circle"></span><span data-i18n="loading.step4">Theological Themes</span></li>
+              <li class="loading-step-item" id="loading-step-5"><span class="step-circle"></span><span data-i18n="loading.step5">Application &amp; Sermon Angles</span></li>
             </ul>
           </div>
 
@@ -237,15 +238,17 @@
             <div class="step-label" id="step-label"></div>
           </div>
 
+          <div id="research-scripture" class="scripture-panel" style="display:none"></div>
+
           <div class="output-header" id="research-output-header">
-            <span class="output-label" id="research-output-label">Research Results</span>
+            <span class="output-label" id="research-output-label" data-i18n="research.outputLabel">Research Results</span>
             <div class="output-actions" id="research-actions" style="display:none">
               <button class="btn-ghost" onclick="copyResearch()">
-                <span id="research-actions-copy">Copy</span>
+                <span id="research-actions-copy" data-i18n="btn.copy">Copy</span>
               </button>
-              <button class="btn-export" onclick="exportResearch('docx')">Word</button>
-              <button class="btn-export" onclick="exportResearch('pdf')">PDF</button>
-              <button class="btn-accent" onclick="useInWriter()">
+              <button class="btn-export" onclick="exportResearch('docx')" data-i18n="btn.word">Word</button>
+              <button class="btn-export" onclick="exportResearch('pdf')" data-i18n="btn.pdf">PDF</button>
+              <button class="btn-accent" onclick="useInWriter()" data-i18n="btn.useInWriter">
                 Use in Sermon Writer →
               </button>
             </div>
@@ -254,20 +257,20 @@
           <div class="output-area prose" id="research-output">
             <div class="output-placeholder">
               <div class="placeholder-cross">✝</div>
-              <p>Research results will appear here.</p>
-              <p class="placeholder-hint">Select a passage above and click <strong>Generate Research</strong> to begin.</p>
+              <p data-i18n="research.placeholder">Research results will appear here.</p>
+              <p class="placeholder-hint" data-i18n-html="research.placeholderHint">Select a passage above and click <strong>Generate Research</strong> to begin.</p>
             </div>
           </div>
 
           <!-- After all steps complete -->
           <div class="research-complete" id="research-complete" style="display:none">
-            <div class="complete-title">Research complete — 5 steps done</div>
-            <p class="complete-desc">Your research has been compiled below. Export it or save it to your account.</p>
+            <div class="complete-title" data-i18n="research.completeTitle">Research complete — 5 steps done</div>
+            <p class="complete-desc" data-i18n="research.completeDesc">Your research has been compiled below. Export it or save it to your account.</p>
             <div class="complete-actions">
-              <button class="btn-export" onclick="exportResearch('pdf')">Download PDF</button>
-              <button class="btn-export" onclick="exportResearch('docx')">Download Word</button>
-              <button class="btn-accent" onclick="useInWriter()">Use in Sermon Writer →</button>
-              <button class="btn-save" id="save-sermon-btn" onclick="saveSermon()" style="display:none">Save to My Sermons</button>
+              <button class="btn-export" onclick="exportResearch('pdf')" data-i18n="btn.downloadPdf">Download PDF</button>
+              <button class="btn-export" onclick="exportResearch('docx')" data-i18n="btn.downloadWord">Download Word</button>
+              <button class="btn-accent" onclick="useInWriter()" data-i18n="btn.useInWriter">Use in Sermon Writer →</button>
+              <button class="btn-save" id="save-sermon-btn" onclick="saveSermon()" style="display:none" data-i18n="btn.save">Save to My Sermons</button>
             </div>
           </div>
         </div>
@@ -280,79 +283,80 @@
       <div class="panel-grid">
 
         <div class="panel-inputs">
-          <h2>Sermon Writer</h2>
-          <p class="panel-desc">Generate a complete sermon outline and draft. Add your research notes for a more grounded, text-driven result.</p>
+          <h2 data-i18n="write.heading">Sermon Writer</h2>
+          <p class="panel-desc" data-i18n="write.desc">Generate a complete sermon outline and draft. Add your research notes for a more grounded, text-driven result.</p>
 
           <div class="form-group">
-            <label for="write-passage">Main Passage <span class="required">*</span></label>
-            <input type="text" id="write-passage" placeholder="e.g. John 3:16–21" autocomplete="off" />
+            <label for="write-passage"><span data-i18n="write.passageLabel">Main Passage</span> <span class="required">*</span></label>
+            <input type="text" id="write-passage" placeholder="e.g. John 3:16–21" data-i18n-ph="ph.writePassage" autocomplete="off" />
           </div>
 
           <div class="form-group">
-            <label for="write-style">Sermon Style &amp; Structure <span class="optional">optional</span></label>
+            <label for="write-style"><span data-i18n="write.styleLabel">Sermon Style &amp; Structure</span> <span class="optional" data-i18n="label.optional">optional</span></label>
             <select id="write-style" onchange="showStyleHint()">
-              <option value="">— Choose a preaching approach —</option>
-              <option value="expository-hb-charles">Expository (Structured &amp; Text-Driven)</option>
-              <option value="big-idea-tony-evans">Big Idea (Clear &amp; Authoritative)</option>
-              <option value="narrative-terry-anderson">Narrative (Story-Driven &amp; Dynamic)</option>
-              <option value="inductive-robert-smith">Inductive (Experiential Discovery)</option>
-              <option value="expository-ralph-west">Expository (Deep &amp; Pastoral)</option>
-              <option value="problem-solution-tony-evans">Problem–Solution (Practical &amp; Direct)</option>
-              <option value="homiletical-plot-terry-anderson">Homiletical Plot (Journey to Celebration)</option>
-              <option value="topical-hb-charles">Topical (Organized &amp; Focused)</option>
-              <option value="narrative-ralph-west">Narrative (Reflective &amp; Pastoral)</option>
-              <option value="big-idea-robert-smith">Big Idea (Experiential &amp; Imaginative)</option>
+              <option value="" data-i18n="select.styleDefault">— Choose a preaching approach —</option>
+              <option value="expository-hb-charles" data-i18n="style.opt.expository-hb-charles">Expository (Structured &amp; Text-Driven)</option>
+              <option value="big-idea-tony-evans" data-i18n="style.opt.big-idea-tony-evans">Big Idea (Clear &amp; Authoritative)</option>
+              <option value="narrative-terry-anderson" data-i18n="style.opt.narrative-terry-anderson">Narrative (Story-Driven &amp; Dynamic)</option>
+              <option value="inductive-robert-smith" data-i18n="style.opt.inductive-robert-smith">Inductive (Experiential Discovery)</option>
+              <option value="expository-ralph-west" data-i18n="style.opt.expository-ralph-west">Expository (Deep &amp; Pastoral)</option>
+              <option value="problem-solution-tony-evans" data-i18n="style.opt.problem-solution-tony-evans">Problem–Solution (Practical &amp; Direct)</option>
+              <option value="homiletical-plot-terry-anderson" data-i18n="style.opt.homiletical-plot-terry-anderson">Homiletical Plot (Journey to Celebration)</option>
+              <option value="topical-hb-charles" data-i18n="style.opt.topical-hb-charles">Topical (Organized &amp; Focused)</option>
+              <option value="narrative-ralph-west" data-i18n="style.opt.narrative-ralph-west">Narrative (Reflective &amp; Pastoral)</option>
+              <option value="big-idea-robert-smith" data-i18n="style.opt.big-idea-robert-smith">Big Idea (Experiential &amp; Imaginative)</option>
             </select>
             <div class="style-hint" id="style-hint"></div>
           </div>
 
           <div class="form-group">
-            <label for="write-title">Sermon Title <span class="optional">optional</span></label>
-            <input type="text" id="write-title" placeholder="e.g. The Weight of Grace" autocomplete="off" />
+            <label for="write-title"><span data-i18n="write.titleLabel">Sermon Title</span> <span class="optional" data-i18n="label.optional">optional</span></label>
+            <input type="text" id="write-title" placeholder="e.g. The Weight of Grace" data-i18n-ph="ph.writeTitle" autocomplete="off" />
           </div>
 
           <div class="form-group">
-            <label for="write-audience">Congregation Context <span class="optional">optional</span></label>
-            <input type="text" id="write-audience" placeholder="e.g. Mixed congregation, evangelistic service, young adults" autocomplete="off" />
+            <label for="write-audience"><span data-i18n="write.audienceLabel">Congregation Context</span> <span class="optional" data-i18n="label.optional">optional</span></label>
+            <input type="text" id="write-audience" placeholder="e.g. Mixed congregation, evangelistic service, young adults" data-i18n-ph="ph.writeAudience" autocomplete="off" />
           </div>
 
           <div class="form-group">
-            <label for="write-length">Target Length</label>
+            <label for="write-length" data-i18n="write.lengthLabel">Target Length</label>
             <select id="write-length">
-              <option value="20-25 minutes">20–25 minutes</option>
-              <option value="30-40 minutes" selected>30–40 minutes</option>
-              <option value="45-60 minutes">45–60 minutes</option>
+              <option value="20-25 minutes" data-i18n="length.20">20–25 minutes</option>
+              <option value="30-40 minutes" selected data-i18n="length.30">30–40 minutes</option>
+              <option value="45-60 minutes" data-i18n="length.45">45–60 minutes</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label for="write-research">Research Notes <span class="optional">optional</span></label>
-            <textarea id="write-research" rows="7" placeholder="Paste research notes here, or use 'Use in Sermon Writer →' from the Research tab..."></textarea>
+            <label for="write-research"><span data-i18n="write.researchLabel">Research Notes</span> <span class="optional" data-i18n="label.optional">optional</span></label>
+            <textarea id="write-research" rows="7" placeholder="Paste research notes here, or use 'Use in Sermon Writer →' from the Research tab..." data-i18n-ph="ph.writeResearch"></textarea>
           </div>
 
           <div class="btn-row">
-            <button class="btn-primary" id="write-btn" onclick="doWrite()">
+            <button class="btn-primary" id="write-btn" onclick="doWrite()" data-i18n="btn.writeDraft">
               Write Sermon Draft
             </button>
           </div>
         </div>
 
         <div class="panel-output">
+          <div id="write-scripture" class="scripture-panel" style="display:none"></div>
           <div class="output-header">
-            <span class="output-label">Sermon Draft</span>
+            <span class="output-label" data-i18n="write.outputLabel">Sermon Draft</span>
             <div class="output-actions" id="write-actions" style="display:none">
               <button class="btn-ghost" onclick="copyOutput('write-output', 'write-actions-copy')">
-                <span id="write-actions-copy">Copy</span>
+                <span id="write-actions-copy" data-i18n="btn.copy">Copy</span>
               </button>
-              <button class="btn-export" onclick="exportContent('write-output', 'docx')">Word</button>
-              <button class="btn-export" onclick="exportContent('write-output', 'pdf')">PDF</button>
+              <button class="btn-export" onclick="exportContent('write-output', 'docx')" data-i18n="btn.word">Word</button>
+              <button class="btn-export" onclick="exportContent('write-output', 'pdf')" data-i18n="btn.pdf">PDF</button>
             </div>
           </div>
           <div class="output-area prose" id="write-output">
             <div class="output-placeholder">
               <div class="placeholder-cross">✍</div>
-              <p>Your sermon outline and draft will appear here.</p>
-              <p class="placeholder-hint">Enter a passage above and click <strong>Write Sermon Draft</strong> to begin.</p>
+              <p data-i18n="write.placeholder">Your sermon outline and draft will appear here.</p>
+              <p class="placeholder-hint" data-i18n-html="write.placeholderHint">Enter a passage above and click <strong>Write Sermon Draft</strong> to begin.</p>
             </div>
           </div>
         </div>
@@ -365,19 +369,19 @@
       <div class="panel-grid">
 
         <div class="panel-inputs">
-          <h2>Sermon Evaluator</h2>
-          <p class="panel-desc">Receive an honest, pastoral evaluation of your sermon's biblical groundedness, doctrinal soundness, Gospel clarity, and application quality.</p>
+          <h2 data-i18n="eval.heading">Sermon Evaluator</h2>
+          <p class="panel-desc" data-i18n="eval.desc">Receive an honest, pastoral evaluation of your sermon's biblical groundedness, doctrinal soundness, Gospel clarity, and application quality.</p>
 
           <div class="form-group">
-            <label for="eval-text">Sermon Text</label>
-            <textarea id="eval-text" rows="10" placeholder="Paste your complete sermon here..."></textarea>
+            <label for="eval-text" data-i18n="eval.textLabel">Sermon Text</label>
+            <textarea id="eval-text" rows="10" placeholder="Paste your complete sermon here..." data-i18n-ph="ph.evalText"></textarea>
           </div>
 
-          <div class="divider-or"><span>or upload a file</span></div>
+          <div class="divider-or"><span data-i18n="eval.or">or upload a file</span></div>
 
           <div class="upload-zone" id="upload-zone">
             <input type="file" id="eval-file" accept=".txt,.docx,.pdf" style="display:none" onchange="handleFileSelect(event)" />
-            <button class="btn-upload" onclick="document.getElementById('eval-file').click()">
+            <button class="btn-upload" onclick="document.getElementById('eval-file').click()" data-i18n="btn.chooseFile">
               Choose File
             </button>
             <span class="upload-hint">.txt &nbsp;·&nbsp; .docx &nbsp;·&nbsp; .pdf</span>
@@ -385,7 +389,7 @@
           </div>
 
           <div class="btn-row">
-            <button class="btn-primary" id="eval-btn" onclick="doEvaluate()">
+            <button class="btn-primary" id="eval-btn" onclick="doEvaluate()" data-i18n="btn.evaluate">
               Evaluate Sermon
             </button>
           </div>
@@ -393,20 +397,20 @@
 
         <div class="panel-output">
           <div class="output-header">
-            <span class="output-label">Evaluation</span>
+            <span class="output-label" data-i18n="eval.outputLabel">Evaluation</span>
             <div class="output-actions" id="eval-actions" style="display:none">
               <button class="btn-ghost" onclick="copyOutput('eval-output', 'eval-actions-copy')">
-                <span id="eval-actions-copy">Copy</span>
+                <span id="eval-actions-copy" data-i18n="btn.copy">Copy</span>
               </button>
-              <button class="btn-export" onclick="exportContent('eval-output', 'docx')">Word</button>
-              <button class="btn-export" onclick="exportContent('eval-output', 'pdf')">PDF</button>
+              <button class="btn-export" onclick="exportContent('eval-output', 'docx')" data-i18n="btn.word">Word</button>
+              <button class="btn-export" onclick="exportContent('eval-output', 'pdf')" data-i18n="btn.pdf">PDF</button>
             </div>
           </div>
           <div class="output-area prose" id="eval-output">
             <div class="output-placeholder">
               <div class="placeholder-cross">🔍</div>
-              <p>Your evaluation will appear here.</p>
-              <p class="placeholder-hint">Covers biblical accuracy, doctrinal soundness, Gospel clarity, and application quality.</p>
+              <p data-i18n="eval.placeholder">Your evaluation will appear here.</p>
+              <p class="placeholder-hint" data-i18n="eval.placeholderHint">Covers biblical accuracy, doctrinal soundness, Gospel clarity, and application quality.</p>
             </div>
           </div>
         </div>
@@ -414,13 +418,25 @@
       </div>
     </section>
 
+    <!-- ── Admin Tab ── -->
+    <section id="tab-admin" class="tab-panel" style="display:none">
+      <div class="sermons-page">
+        <h2 data-i18n="admin.heading">Admin</h2>
+        <p class="panel-desc" data-i18n="admin.desc">Manage users: block access, assign a model, and review usage. Click a user to view their saved sermons.</p>
+        <div id="admin-users" class="admin-users-wrap">
+          <div class="output-placeholder" data-i18n="list.loading">Loading…</div>
+        </div>
+        <div id="admin-sermons" class="admin-sermons" style="display:none"></div>
+      </div>
+    </section>
+
     <!-- ── My Sermons Tab ── -->
     <section id="tab-sermons" class="tab-panel" style="display:none">
       <div class="sermons-page">
-        <h2>My Sermons</h2>
-        <p class="panel-desc">Your saved research sessions. Click any entry to reload the research.</p>
+        <h2 data-i18n="sermons.heading">My Sermons</h2>
+        <p class="panel-desc" data-i18n="sermons.desc">Your saved research sessions. Click any entry to reload the research.</p>
         <div id="sermons-list" class="sermons-list">
-          <div class="output-placeholder">Loading…</div>
+          <div class="output-placeholder" data-i18n="list.loading">Loading…</div>
         </div>
       </div>
     </section>
@@ -428,10 +444,37 @@
   </main>
 
   <footer class="site-footer">
-    <span>Sermon Tools &nbsp;·&nbsp; IMB Innovation Team</span>
+    <span data-i18n="footer.text">Sermon Tools &nbsp;·&nbsp; IMB Innovation Team</span>
   </footer>
 
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- ── Settings Modal (signed-in users) ── -->
+  <div id="settings-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeSettings()">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <h3 id="settings-title" data-i18n="settings.title">Settings</h3>
+      <div class="form-group">
+        <label for="set-lang" data-i18n="settings.language">Language</label>
+        <select id="set-lang" onchange="onSettingsLangChange()"></select>
+      </div>
+      <div class="form-group">
+        <label for="set-translation" data-i18n="settings.translation">Preferred translation</label>
+        <select id="set-translation"></select>
+      </div>
+      <div class="form-group">
+        <label for="set-length" data-i18n="settings.length">Default sermon length</label>
+        <select id="set-length"></select>
+      </div>
+      <div class="form-group">
+        <label for="set-style" data-i18n="settings.style">Default preaching style</label>
+        <select id="set-style"></select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeSettings()" data-i18n="settings.cancel">Cancel</button>
+        <button class="btn-primary" onclick="saveSettings()" data-i18n="settings.save">Save</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/static/js/app.js"></script>
 </body>

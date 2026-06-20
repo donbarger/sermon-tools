@@ -31,7 +31,7 @@ A workshop, not a sermon machine. The tool is built around the conviction that t
 - **Image gen:** `google/gemini-2.5-flash-image` via OpenRouter chat/completions with `modalities: ["image","text"]`
 - **MCP grounding:** [`studybible-mcp.fly.dev`](https://github.com/djayatillake/studybible-mcp) — async client in `mcp_refs.py`, sequential tool calls (the server doesn't tolerate concurrent requests on the same session), 30-day SQLite cache
 - **Auth:** Google OAuth 2.0 (Authlib), session cookies signed with itsdangerous
-- **Bible APIs:** ESV (English), API.Bible NVI (Spanish), bible-api.com (RVR1995)
+- **Verbatim Scripture:** `verses.py` provider registry — ESV API, NLT API (Tyndale), API.Bible, Biblia API. The chosen translation's exact text is fetched, shown to the pastor, and injected into the AI prompts. Env-gated + fail-soft (no key → that translation is AI-quoted). Verbatim today: ESV, NLT, KJV, NVI, RVR1960, NTV, LBLA, RVA, RVR1909, LEB, LSB, ASV.
 
 ---
 
@@ -50,7 +50,7 @@ open http://localhost:8000
 - `OPENROUTER_API_KEY` — required for any AI feature
 - `MODEL` — default model (recommend `anthropic/claude-haiku-4-5`)
 - `ADMIN_EMAILS` — comma-separated; these users auto-promote to admin on login
-- `ESV_API_KEY`, `APIBIBLE_API_KEY` — Scripture lookup
+- `ESV_API_KEY`, `APIBIBLE_API_KEY`, `BIBLIA_API_KEY` — verbatim Scripture providers (each optional; see `verses.py`)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BACKEND_URL`, `SESSION_SECRET` — OAuth
 - `MCP_ENABLED=true`, `MCP_BASE_URL=https://studybible-mcp.fly.dev/mcp/` — Study Bible MCP
 
