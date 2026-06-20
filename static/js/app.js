@@ -122,6 +122,8 @@ const TRANSLATIONS = {
     'sermons.desc': 'Your saved research sessions. Click any entry to reload the research.',
     'list.loading': 'Loading…',
     'footer.text': 'Sermon Tools &nbsp;·&nbsp; IMB Innovation Team',
+    'footer.terms': 'Terms',
+    'footer.privacy': 'Privacy',
 
     'scripture.label': 'Passage text',
     'translation.verbatimTag': 'verbatim',
@@ -133,11 +135,50 @@ const TRANSLATIONS = {
     'landing.intro': 'An AI-assisted workspace for biblical preaching. Research a passage with real scholarly grounding, shape a complete sermon draft, and evaluate it for biblical faithfulness — in English or Spanish, with Scripture quoted verbatim in your preferred translation.',
     'landing.f1t': 'Research',
     'landing.f1': 'Historical context, exegesis, cross-references, themes, and application — grounded in real scholarship.',
-    'landing.f2t': 'Write',
-    'landing.f2': 'A full outline and draft in your chosen preaching style and target length.',
+    'landing.f2t': 'Craft',
+    'landing.f2': 'Build the sermon yourself on a workbench — your big idea, your movements — with AI as a mentor that asks good questions and an editor that helps where you point.',
     'landing.f3t': 'Evaluate',
     'landing.f3': 'A pastoral, five-dimension review of any sermon’s biblical groundedness.',
     'landing.note': 'Sign in with your Google account to begin.',
+
+    'tab.craft': 'Craft',
+    'craft.researchRail': 'Research',
+    'craft.noResearch': 'Run Research first, or start from a blank canvas.',
+    'craft.showResearch': 'Research ›',
+    'craft.titlePh': 'Sermon title (optional)',
+    'craft.bigIdea': 'Big Idea',
+    'craft.bigIdeaPh': 'The one thing they should walk away with…',
+    'craft.helpThink': '✦ Help me think',
+    'craft.addMovement': '+ Add a movement',
+    'craft.save': 'Save to My Sermons',
+    'craft.empty': 'No movements yet. Add one, or use “Help me think” to draft a structure from your ideas.',
+    'craft.movementTitlePh': 'Movement / point…',
+    'craft.movementTextPh': 'Write this movement in your words…',
+    'craft.aDraft': '✦ Draft from my notes',
+    'craft.aIllustrate': 'Illustration',
+    'craft.aCrossRef': 'Find a verse',
+    'craft.aTighten': 'Tighten',
+    'craft.aFaithful': 'Faithful to the text?',
+    'craft.qG1': 'What is the one thing they must walk away with?',
+    'craft.qG2': 'Where is the tension or question in the text?',
+    'craft.qG3': 'Who is in the room — and what are they carrying?',
+    'craft.qG4': 'What response are you hoping for?',
+    'craft.qM1': 'Is there a story or image you want to tell here?',
+    'craft.qM2': 'What objection might a listener raise?',
+    'craft.qM3': 'Where is the Gospel in this movement?',
+    'craft.coachStructure': 'Draft a big idea & movements from my answers',
+    'craft.coachWeave': 'Weave my answer in',
+    'craft.coachPh': 'Jot your thoughts here…',
+    'craft.coachEmpty': 'Write a few thoughts first.',
+    'craft.suggestion': '✦ Suggestion',
+    'craft.applyStructure': 'Use this structure',
+    'craft.insert': 'Insert',
+    'craft.replace': 'Replace selection',
+    'craft.discard': 'Discard',
+    'craft.structureApplied': 'Structure added — edit freely',
+    'craft.untitled': 'Untitled sermon',
+    'craft.saved': 'Saved to My Sermons',
+    'craft.loaded': 'Draft loaded',
 
     'settings.button': 'Settings',
     'settings.title': 'Settings',
@@ -334,6 +375,8 @@ const TRANSLATIONS = {
     'sermons.desc': 'Sus sesiones de investigación guardadas. Haga clic en cualquier entrada para volver a cargar la investigación.',
     'list.loading': 'Cargando…',
     'footer.text': 'Sermon Tools &nbsp;·&nbsp; Equipo de Innovación de la IMB',
+    'footer.terms': 'Términos',
+    'footer.privacy': 'Privacidad',
 
     'scripture.label': 'Texto del pasaje',
     'translation.verbatimTag': 'texto literal',
@@ -345,11 +388,50 @@ const TRANSLATIONS = {
     'landing.intro': 'Un espacio de trabajo asistido por IA para la predicación bíblica. Investigue un pasaje con fundamento académico real, redacte un borrador completo del sermón y evalúe su fidelidad bíblica — en inglés o español, con la Escritura citada textualmente en su traducción preferida.',
     'landing.f1t': 'Investigar',
     'landing.f1': 'Contexto histórico, exégesis, referencias cruzadas, temas y aplicación — con fundamento académico real.',
-    'landing.f2t': 'Redactar',
-    'landing.f2': 'Un bosquejo y borrador completos en el estilo de predicación y la duración que elija.',
+    'landing.f2t': 'Taller',
+    'landing.f2': 'Usted construye el sermón en un taller — su idea central, sus movimientos — con la IA como un mentor que hace buenas preguntas y un editor que ayuda donde usted lo indique.',
     'landing.f3t': 'Evaluar',
     'landing.f3': 'Una evaluación pastoral de cinco dimensiones del fundamento bíblico de un sermón.',
     'landing.note': 'Inicie sesión con su cuenta de Google para comenzar.',
+
+    'tab.craft': 'Taller',
+    'craft.researchRail': 'Investigación',
+    'craft.noResearch': 'Haga primero la Investigación, o comience con un lienzo en blanco.',
+    'craft.showResearch': 'Investigación ›',
+    'craft.titlePh': 'Título del sermón (opcional)',
+    'craft.bigIdea': 'Idea central',
+    'craft.bigIdeaPh': 'Lo único que deben recordar al salir…',
+    'craft.helpThink': '✦ Ayúdame a pensar',
+    'craft.addMovement': '+ Agregar un movimiento',
+    'craft.save': 'Guardar en Mis sermones',
+    'craft.empty': 'Aún no hay movimientos. Agregue uno o use «Ayúdame a pensar» para bosquejar una estructura a partir de sus ideas.',
+    'craft.movementTitlePh': 'Movimiento / punto…',
+    'craft.movementTextPh': 'Escriba este movimiento con sus palabras…',
+    'craft.aDraft': '✦ Redactar desde mis notas',
+    'craft.aIllustrate': 'Ilustración',
+    'craft.aCrossRef': 'Buscar un versículo',
+    'craft.aTighten': 'Condensar',
+    'craft.aFaithful': '¿Fiel al texto?',
+    'craft.qG1': '¿Cuál es la única cosa que deben recordar al salir?',
+    'craft.qG2': '¿Dónde está la tensión o la pregunta en el texto?',
+    'craft.qG3': '¿Quiénes están presentes y qué cargan?',
+    'craft.qG4': '¿Qué respuesta espera provocar?',
+    'craft.qM1': '¿Hay una historia o imagen que quiera contar aquí?',
+    'craft.qM2': '¿Qué objeción podría plantear un oyente?',
+    'craft.qM3': '¿Dónde está el evangelio en este movimiento?',
+    'craft.coachStructure': 'Bosquejar idea central y movimientos a partir de mis respuestas',
+    'craft.coachWeave': 'Integrar mi respuesta',
+    'craft.coachPh': 'Anote sus pensamientos aquí…',
+    'craft.coachEmpty': 'Escriba algunas ideas primero.',
+    'craft.suggestion': '✦ Sugerencia',
+    'craft.applyStructure': 'Usar esta estructura',
+    'craft.insert': 'Insertar',
+    'craft.replace': 'Reemplazar selección',
+    'craft.discard': 'Descartar',
+    'craft.structureApplied': 'Estructura agregada — edite con libertad',
+    'craft.untitled': 'Sermón sin título',
+    'craft.saved': 'Guardado en Mis sermones',
+    'craft.loaded': 'Borrador cargado',
 
     'settings.button': 'Configuración',
     'settings.title': 'Configuración',
@@ -554,6 +636,7 @@ function switchTab(tab) {
   });
   if (tab === 'sermons') loadSermonsList();
   if (tab === 'admin') loadAdminUsers();
+  if (tab === 'craft') loadCraft();
 }
 
 // ── Markdown Rendering ───────────────────────────────────────────────────────
@@ -1270,6 +1353,23 @@ async function loadSavedSermon(id) {
     if (!res.ok) throw new Error();
     const sermon = await res.json();
 
+    // A Craft draft reopens in the Craft workbench.
+    if (sermon.draft) {
+      let d = {};
+      try { d = JSON.parse(sermon.draft); } catch {}
+      craftState.id = sermon.id;
+      craftState.title = d.title || sermon.title || '';
+      craftState.passage = sermon.passage || '';
+      craftState.bigIdea = d.big_idea || '';
+      craftState.movements = Array.isArray(d.movements) ? d.movements : [];
+      craftState.research = sermon.research || '';
+      craftState.researchSteps = JSON.parse(sermon.steps || '[]');
+      craftState.passageData = null;
+      switchTab('craft');
+      showToast(t('craft.loaded'), 'success');
+      return;
+    }
+
     // Restore research state
     researchState.passage = sermon.passage || '';
     researchState.topic = sermon.topic || '';
@@ -1607,6 +1707,314 @@ async function doEvaluate() {
   } finally {
     setLoading('eval-btn', false);
   }
+}
+
+// ── Craft: collaborative sermon workbench ────────────────────────────────────
+
+const craftState = {
+  id: null, title: '', passage: '', passageData: null,
+  research: '', researchSteps: [], bigIdea: '', movements: [],
+};
+const craftSugg = {};  // target -> { raw, action }
+
+function loadCraft() {
+  // On first open of an empty canvas, pull the most recent research.
+  if (!craftState.passage && !craftState.movements.length && typeof researchState !== 'undefined' && researchState.passage) {
+    craftState.passage = researchState.passage;
+    craftState.passageData = researchState.passageData || null;
+    craftState.research = researchState.compiled || '';
+    craftState.researchSteps = researchState.stepResults || [];
+  }
+  renderCraftRail();
+  document.getElementById('craft-title').value = craftState.title || '';
+  document.getElementById('craft-bigidea-input').value = craftState.bigIdea || '';
+  document.getElementById('craft-passage-ref').textContent = craftState.passage ? localizePassage(craftState.passage) : '';
+  renderMovements();
+}
+
+function renderCraftRail() {
+  const body = document.getElementById('craft-rail-body');
+  let html = '';
+  if (craftState.passage) {
+    html += `<div class="rail-passage"><div class="rail-ref">${esc(localizePassage(craftState.passage))}</div>`;
+    if (craftState.passageData && craftState.passageData.text) {
+      html += `<div class="rail-scripture">${esc(craftState.passageData.text)}</div>
+               <div class="rail-attr">${esc(craftState.passageData.attribution || '')}</div>`;
+    }
+    html += `</div>`;
+  }
+  const steps = craftState.researchSteps || [];
+  if (steps.length) {
+    html += steps.map(s => `
+      <details class="rail-step">
+        <summary>${esc(s.title || '')}</summary>
+        <div class="prose">${renderMarkdown(s.content || '')}</div>
+      </details>`).join('');
+  } else if (craftState.research) {
+    html += `<details class="rail-step" open><summary>${esc(t('craft.researchRail'))}</summary><div class="prose">${renderMarkdown(craftState.research)}</div></details>`;
+  }
+  if (!html) html = `<div class="output-placeholder">${esc(t('craft.noResearch'))}</div>`;
+  body.innerHTML = html;
+}
+
+function renderMovements() {
+  const wrap = document.getElementById('craft-movements');
+  if (!craftState.movements.length) {
+    wrap.innerHTML = `<div class="craft-empty">${esc(t('craft.empty'))}</div>`;
+    return;
+  }
+  wrap.innerHTML = craftState.movements.map((m, i) => `
+    <div class="movement" id="mv-${i}">
+      <div class="movement-head">
+        <span class="movement-num">${i + 1}</span>
+        <input class="movement-title" id="mv-title-${i}" value="${esc(m.title || '')}"
+               data-i18n-ph="craft.movementTitlePh" placeholder="Movement / point…"
+               oninput="craftState.movements[${i}].title = this.value" />
+        <div class="movement-controls">
+          <button onclick="moveMovement(${i}, -1)" title="Up" aria-label="Up">↑</button>
+          <button onclick="moveMovement(${i}, 1)" title="Down" aria-label="Down">↓</button>
+          <button onclick="deleteMovement(${i})" title="Delete" aria-label="Delete">✕</button>
+        </div>
+      </div>
+      <textarea class="movement-text" id="mv-text-${i}" rows="5"
+                data-i18n-ph="craft.movementTextPh" placeholder="Write this movement in your words…"
+                oninput="craftState.movements[${i}].text = this.value"></textarea>
+      <div class="movement-tools">
+        <button onclick="movementAssist(${i}, 'draft')">${esc(t('craft.aDraft'))}</button>
+        <button onclick="movementAssist(${i}, 'illustrate')">${esc(t('craft.aIllustrate'))}</button>
+        <button onclick="movementAssist(${i}, 'cross_ref')">${esc(t('craft.aCrossRef'))}</button>
+        <button onclick="movementAssist(${i}, 'tighten')">${esc(t('craft.aTighten'))}</button>
+        <button onclick="movementAssist(${i}, 'faithful')">${esc(t('craft.aFaithful'))}</button>
+        <button class="btn-coach" onclick="openCoach(${i})">${esc(t('craft.helpThink'))}</button>
+      </div>
+      <div class="craft-coach" id="coach-${i}" style="display:none"></div>
+      <div class="craft-suggestion" id="sugg-${i}" style="display:none"></div>
+    </div>`).join('');
+  // set textarea values (can't put multiline in attribute reliably)
+  craftState.movements.forEach((m, i) => {
+    const ta = document.getElementById(`mv-text-${i}`);
+    if (ta) ta.value = m.text || '';
+  });
+  // apply placeholders for the freshly built nodes
+  wrap.querySelectorAll('[data-i18n-ph]').forEach(el => el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))));
+}
+
+function addMovement() {
+  craftState.movements.push({ title: '', text: '' });
+  renderMovements();
+}
+function deleteMovement(i) {
+  craftState.movements.splice(i, 1);
+  renderMovements();
+}
+function moveMovement(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= craftState.movements.length) return;
+  const a = craftState.movements;
+  [a[i], a[j]] = [a[j], a[i]];
+  renderMovements();
+}
+
+function toggleCraftRail() {
+  const rail = document.getElementById('craft-rail');
+  const show = document.getElementById('craft-rail-show');
+  const hidden = rail.style.display === 'none';
+  rail.style.display = hidden ? '' : 'none';
+  show.style.display = hidden ? 'none' : '';
+}
+
+// ── Coaching (static questions; the pastor's answers feed the AI) ──────────────
+
+function openCoach(target) {
+  const el = document.getElementById(target === 'global' ? 'craft-coach-global' : `coach-${target}`);
+  if (!el) return;
+  if (el.style.display !== 'none' && el.innerHTML) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const qKeys = target === 'global'
+    ? ['craft.qG1', 'craft.qG2', 'craft.qG3', 'craft.qG4']
+    : ['craft.qM1', 'craft.qM2', 'craft.qM3'];
+  const btnLabel = target === 'global' ? t('craft.coachStructure') : t('craft.coachWeave');
+  el.innerHTML = `
+    <div class="coach-qs">${qKeys.map(k => `<div class="coach-q">${esc(t(k))}</div>`).join('')}</div>
+    <textarea class="coach-answer" id="coach-ans-${target}" rows="3" placeholder="${esc(t('craft.coachPh'))}"></textarea>
+    <div class="coach-actions">
+      <button class="btn-primary" onclick="submitCoach('${target}')">${esc(btnLabel)}</button>
+      <button class="btn-ghost" onclick="closeCoach('${target}')">${esc(t('settings.cancel'))}</button>
+    </div>`;
+  el.style.display = '';
+}
+function closeCoach(target) {
+  const el = document.getElementById(target === 'global' ? 'craft-coach-global' : `coach-${target}`);
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+}
+function submitCoach(target) {
+  const ans = (document.getElementById(`coach-ans-${target}`) || {}).value || '';
+  if (!ans.trim()) { showToast(t('craft.coachEmpty'), 'error'); return; }
+  if (target === 'global') craftAssist('global', 'structure', { answers: ans });
+  else {
+    const i = Number(target);
+    craftAssist(i, 'weave', { answers: ans, movement_title: craftState.movements[i].title, movement_text: craftState.movements[i].text });
+  }
+}
+
+// ── Movement assists + suggestion box (suggest → approve) ──────────────────────
+
+function movementAssist(i, action) {
+  const m = craftState.movements[i];
+  const ta = document.getElementById(`mv-text-${i}`);
+  let selection = '';
+  if (ta && ta.selectionStart != null && ta.selectionEnd > ta.selectionStart) {
+    selection = ta.value.slice(ta.selectionStart, ta.selectionEnd);
+  }
+  craftAssist(i, action, { movement_title: m.title, movement_text: m.text, selection });
+}
+
+async function craftAssist(target, action, extra) {
+  const suggEl = document.getElementById(target === 'global' ? 'craft-sugg-global' : `sugg-${target}`);
+  if (!suggEl) return;
+  suggEl.style.display = '';
+  suggEl.innerHTML = `<div class="sugg-head">${esc(t('craft.suggestion'))}</div>
+    <div class="sugg-body prose" id="sugg-body-${target}"><div class="streaming-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  const bodyEl = document.getElementById(`sugg-body-${target}`);
+
+  const payload = {
+    action, lang: currentLang,
+    passage: craftState.passage || null,
+    passage_text: craftState.passageData ? craftState.passageData.text : null,
+    passage_attribution: craftState.passageData ? craftState.passageData.attribution : null,
+    research: craftState.research || null,
+    big_idea: (document.getElementById('craft-bigidea-input') || {}).value || null,
+    ...extra,
+  };
+
+  let full = '';
+  try {
+    const res = await fetch('/api/craft/assist', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      let d = {}; try { d = await res.json(); } catch {}
+      throw new Error(d.detail || t('err.requestFailed'));
+    }
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const p = JSON.parse(data);
+          if (p.error) { bodyEl.innerHTML = `<div class="error-msg">${esc(p.error)}</div>`; return; }
+          if (p.text) { full += p.text; bodyEl.innerHTML = renderMarkdown(full); }
+        } catch {}
+      }
+    }
+  } catch (err) {
+    bodyEl.innerHTML = `<div class="error-msg">${esc(err.message)}</div>`;
+    return;
+  }
+
+  craftSugg[target] = { raw: full, action };
+  let actions;
+  if (target === 'global' && action === 'structure') {
+    actions = `<button class="btn-accent" onclick="applyStructure('global')">${esc(t('craft.applyStructure'))}</button>
+               <button class="btn-ghost" onclick="discardSugg('global')">${esc(t('craft.discard'))}</button>`;
+  } else {
+    actions = `<button class="btn-accent" onclick="applySugg(${JSON.stringify(target)}, 'insert')">${esc(t('craft.insert'))}</button>
+               <button class="btn-ghost" onclick="applySugg(${JSON.stringify(target)}, 'replace')">${esc(t('craft.replace'))}</button>
+               <button class="btn-ghost" onclick="discardSugg(${JSON.stringify(target)})">${esc(t('craft.discard'))}</button>`;
+  }
+  suggEl.insertAdjacentHTML('beforeend', `<div class="sugg-actions">${actions}</div>`);
+}
+
+function discardSugg(target) {
+  const el = document.getElementById(target === 'global' ? 'craft-sugg-global' : `sugg-${target}`);
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  delete craftSugg[target];
+}
+
+function applySugg(target, mode) {
+  const s = craftSugg[target];
+  if (!s) return;
+  const i = Number(target);
+  const ta = document.getElementById(`mv-text-${i}`);
+  if (!ta) return;
+  if (mode === 'replace' && ta.selectionEnd > ta.selectionStart) {
+    ta.value = ta.value.slice(0, ta.selectionStart) + s.raw + ta.value.slice(ta.selectionEnd);
+  } else if (mode === 'replace') {
+    ta.value = s.raw;
+  } else {  // insert / append
+    ta.value = (ta.value ? ta.value.trimEnd() + '\n\n' : '') + s.raw;
+  }
+  craftState.movements[i].text = ta.value;
+  discardSugg(target);
+}
+
+function applyStructure(target) {
+  const s = craftSugg[target];
+  if (!s) return;
+  const lines = s.raw.split('\n').map(l => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    const big = line.match(/^(?:\*\*)?big idea(?:\*\*)?\s*[:\-]\s*(.+)/i);
+    if (big) {
+      craftState.bigIdea = big[1].replace(/\*\*/g, '').trim();
+      const inp = document.getElementById('craft-bigidea-input');
+      if (inp) inp.value = craftState.bigIdea;
+      continue;
+    }
+    const item = line.match(/^\d+[.)]\s*(.+)/);
+    if (item) craftState.movements.push({ title: item[1].replace(/\*\*/g, '').trim(), text: '' });
+  }
+  renderMovements();
+  discardSugg(target);
+  closeCoach('global');
+  showToast(t('craft.structureApplied'), 'success');
+}
+
+// ── Save / export ──────────────────────────────────────────────────────────────
+
+function _craftDraft() {
+  return {
+    title: (document.getElementById('craft-title') || {}).value || '',
+    big_idea: (document.getElementById('craft-bigidea-input') || {}).value || '',
+    movements: craftState.movements.map(m => ({ title: m.title || '', text: m.text || '' })),
+  };
+}
+
+async function saveCraft() {
+  if (!currentUser) { showToast(t('toast.signInToSave'), 'error'); return; }
+  const draft = _craftDraft();
+  const title = draft.title || (craftState.passage ? localizePassage(craftState.passage) : t('craft.untitled'));
+  try {
+    const res = await fetch('/api/sermons', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: craftState.id, title, passage: craftState.passage || '', draft }),
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    craftState.id = data.id;
+    showToast(t('craft.saved'), 'success');
+  } catch { showToast(t('toast.saveFailed'), 'error'); }
+}
+
+function _craftMarkdown() {
+  const d = _craftDraft();
+  let md = `# ${d.title || localizePassage(craftState.passage) || ''}\n\n`;
+  if (craftState.passage) md += `_${localizePassage(craftState.passage)}_\n\n`;
+  if (d.big_idea) md += `**${t('craft.bigIdea')}:** ${d.big_idea}\n\n`;
+  d.movements.forEach(m => { md += `## ${m.title || ''}\n\n${m.text || ''}\n\n`; });
+  return md;
+}
+
+async function exportCraft(format) {
+  const md = _craftMarkdown();
+  const title = (document.getElementById('craft-title') || {}).value || (craftState.passage ? localizePassage(craftState.passage) : 'Sermon');
+  await _exportDoc(md, format, title);
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────

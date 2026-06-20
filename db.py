@@ -68,6 +68,10 @@ def _migrate(conn):
     for col, decl in ADMIN_COLUMNS:
         if col not in existing:
             conn.execute(f"ALTER TABLE users ADD COLUMN {col} {decl}")
+    # sermons.draft holds the Craft workbench state (JSON: title, big_idea, movements).
+    sermon_cols = {row["name"] for row in conn.execute("PRAGMA table_info(sermons)")}
+    if "draft" not in sermon_cols:
+        conn.execute("ALTER TABLE sermons ADD COLUMN draft TEXT")
 
 
 @contextmanager
@@ -182,20 +186,21 @@ def get_sermon(sermon_id: int, user_id: int) -> dict | None:
 
 
 def save_sermon(user_id: int, title: str, passage: str, topic: str,
-                research: str, steps: list) -> int:
+                research: str, steps: list, draft=None) -> int:
     with _conn() as conn:
         conn.execute(
-            "INSERT INTO sermons (user_id, title, passage, topic, research, steps) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            (user_id, title, passage, topic, research, json.dumps(steps))
+            "INSERT INTO sermons (user_id, title, passage, topic, research, steps, draft) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, title, passage, topic, research, json.dumps(steps),
+             json.dumps(draft) if draft is not None else None)
         )
         row = conn.execute("SELECT last_insert_rowid()").fetchone()
         return row[0]
 
 
 def update_sermon(sermon_id: int, user_id: int, **kwargs) -> None:
-    allowed = {"title", "passage", "topic", "research", "steps"}
-    updates = {k: (json.dumps(v) if k == "steps" else v)
+    allowed = {"title", "passage", "topic", "research", "steps", "draft"}
+    updates = {k: (json.dumps(v) if k in ("steps", "draft") else v)
                for k, v in kwargs.items() if k in allowed}
     if not updates:
         return

@@ -680,6 +680,75 @@ async def verse_translations():
     return {"verbatim": sorted(verses.verbatim_capable())}
 
 
+# ─── Craft: collaborative sermon workbench ──────────────────────────────────────
+# Focused, on-demand assists for a pastor writing their OWN sermon. Never writes
+# the whole thing — each action helps with one block or one selection.
+
+CRAFT_BASE = """You are a preaching assistant helping an evangelical pastor write their OWN sermon. You hold to core evangelical convictions: biblical inerrancy and the full authority of Scripture; salvation by grace alone, through faith alone, in Christ alone; the Trinity; the deity, virgin birth, bodily resurrection, and return of Jesus Christ; the necessity of personal repentance and faith.
+
+You are a mentor and editor, NOT a ghostwriter. Help ONLY with the one specific task described below. Be concise and concrete. Preserve the pastor's own voice, structure, and ideas — build on what they give you rather than replacing it. Never write or outline the whole sermon. Use light markdown."""
+
+CRAFT_ACTIONS = {
+    "structure": ("From the pastor's answers below, the passage, and the research, propose ONE clear big idea (a single sentence) and 3–5 sermon movement headings that flow from the text and from what the pastor said. Output exactly: a line beginning `Big idea:` then a numbered list of movement headings. No prose beyond that. Draw on the pastor's own answers — don't invent a different sermon.", 700),
+    "draft": ("Write preachable prose for ONLY this one movement (its heading is given), grounded in the passage and research, consistent with the big idea and the pastor's notes for this movement. One section only — not the whole sermon. Keep Scripture references specific and the Gospel clear.", 1600),
+    "weave": ("Take the pastor's answer below and weave it into preachable prose for this one movement, in the pastor's voice, grounded in the text. Develop THEIR idea — don't substitute your own.", 1400),
+    "illustrate": ("Suggest 1–2 concrete illustration or story ideas (or vivid images) that fit this movement's point. Keep each brief — a seed the pastor can develop, not a finished story. If the pastor described a story below, build on it.", 700),
+    "cross_ref": ("Suggest relevant cross-references / supporting passages for this movement's point. For each, give the reference and a one-line note on how it connects. Keep it tight.", 600),
+    "tighten": ("Tighten the text provided below: same meaning and voice, fewer words, stronger lines. Return ONLY the revised text.", 1000),
+    "rephrase": ("Rephrase the text provided below in a fresh way while keeping its meaning and the pastor's voice. Return ONLY the revised text.", 1000),
+    "expand": ("Expand the text/point provided below into fuller preachable prose, staying on the pastor's line of thought. Return ONLY the expanded text.", 1400),
+    "faithful": ("Review the text provided below against the passage. Note — as brief, pastoral bullet points — anything that overreaches the text, misreads it, or could be tightened to stay faithful. If it is sound, say so and note one strength.", 700),
+}
+
+
+class CraftAssistRequest(BaseModel):
+    action: str
+    lang: Optional[str] = "en"
+    passage: Optional[str] = None
+    passage_text: Optional[str] = None
+    passage_attribution: Optional[str] = None
+    research: Optional[str] = None
+    big_idea: Optional[str] = None
+    movement_title: Optional[str] = None
+    movement_text: Optional[str] = None
+    selection: Optional[str] = None
+    answers: Optional[str] = None
+
+
+@app.post("/api/craft/assist")
+async def craft_assist(request: CraftAssistRequest, http: Request):
+    instruction = CRAFT_ACTIONS.get(request.action)
+    if not instruction:
+        raise HTTPException(status_code=400, detail="Unknown craft action")
+    uid, model = _resolve_caller(http)
+    instr_text, max_tokens = instruction
+
+    system = f"{CRAFT_BASE}\n\nYOUR TASK:\n{instr_text}"
+    system += _lang_directive(request.lang)
+    system += _passage_block(request.passage_text, request.passage_attribution)
+
+    msg = ""
+    if request.passage:
+        msg += f"Passage: {request.passage}\n"
+    if request.big_idea:
+        msg += f"\nThe sermon's big idea: {request.big_idea}\n"
+    if request.movement_title:
+        msg += f"\nThis movement's heading: {request.movement_title}\n"
+    if request.movement_text:
+        msg += f"\nThe pastor's notes/text for this movement:\n{request.movement_text}\n"
+    if request.selection:
+        msg += f"\nThe specific text to work on:\n{request.selection}\n"
+    if request.answers:
+        msg += f"\nThe pastor's answers to coaching questions:\n{request.answers}\n"
+    if request.research:
+        msg += f"\nResearch for reference (use as needed, don't quote wholesale):\n{request.research[:6000]}\n"
+    if not msg.strip():
+        msg = "Begin."
+
+    return await stream_openrouter(system, msg, max_tokens=max_tokens,
+                                   model=model, user_id=uid, feature="craft:" + request.action)
+
+
 # ─── Auth Routes ──────────────────────────────────────────────────────────────
 
 @app.get("/api/auth/google")
@@ -832,11 +901,13 @@ async def admin_user_sermons(request: Request, user_id: int):
 # ─── Sermon Save/Load Routes ──────────────────────────────────────────────────
 
 class SaveSermonRequest(BaseModel):
+    id: Optional[int] = None
     title: Optional[str] = None
-    passage: str
+    passage: Optional[str] = None
     topic: Optional[str] = None
     research: Optional[str] = None
     steps: Optional[list] = None
+    draft: Optional[dict] = None
 
 
 @app.get("/api/sermons")
@@ -849,6 +920,16 @@ async def list_sermons(request: Request):
 async def save_sermon(request: Request, body: SaveSermonRequest):
     uid = auth.require_user_id(request)
     title = body.title or (f"{body.passage} Research" if body.passage else "Untitled")
+    # Update in place when an id is given and owned by the caller; else create.
+    if body.id and db.get_sermon(body.id, uid):
+        db.update_sermon(
+            body.id, uid,
+            title=title, passage=body.passage or "", topic=body.topic or "",
+            **({"research": body.research} if body.research is not None else {}),
+            **({"steps": body.steps} if body.steps is not None else {}),
+            **({"draft": body.draft} if body.draft is not None else {}),
+        )
+        return {"id": body.id, "ok": True}
     sermon_id = db.save_sermon(
         user_id=uid,
         title=title,
@@ -856,6 +937,7 @@ async def save_sermon(request: Request, body: SaveSermonRequest):
         topic=body.topic or "",
         research=body.research or "",
         steps=body.steps or [],
+        draft=body.draft,
     )
     return {"id": sermon_id, "ok": True}
 

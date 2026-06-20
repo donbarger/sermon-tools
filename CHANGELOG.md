@@ -2,6 +2,32 @@
 
 Most recent at top. Versioning is loose — this is a living app, shipped continuously.
 
+## v0.20 — Terms of Use & Privacy Policy
+
+- Added self-contained **Terms of Use** and **Privacy Policy** pages (`static/terms-of-use.html`,
+  `static/privacy-policy.html`), linked from the footer (visible on the landing page too). No-warranty
+  / "as is" disclaimer + limitation of liability; prohibits reverse-engineering, scraping, automated
+  access, and accessing any portion/account/admin feature not explicitly permitted. Privacy policy
+  reflects what the app actually collects (Google account info, saved research/drafts, per-account
+  usage logs, a session cookie) and the third parties involved (Google, OpenRouter, the Bible-text
+  providers, the Study Bible service).
+
+## v0.19 — Craft: collaborative sermon workbench (Write → admin-only "Sermon Draft")
+
+- The old auto-generate flow is renamed **"Sermon Draft"** and is now **admin-only** — it stays as a
+  power tool but is hidden from regular users.
+- New **Craft** tab (everyone): a pastor-driven workbench that honors "a workshop, not a machine."
+  Collapsible research rail (passage + verbatim Scripture + the 5 research steps) beside a canvas
+  where the pastor writes the **big idea** and adds/reorders **movements** in their own words. Three
+  kinds of help, all **suggest-then-approve** (Insert / Replace / Discard — nothing auto-applies):
+  (1) per-movement editor help — draft from notes, illustration, find a verse, tighten, faithful-to-
+  the-text; (2) **coaching** that draws the pastor out — static questions globally ("the one thing
+  they must remember," the tension, the room, the response) and per-movement (a story/image, an
+  objection, the Gospel turn), turning the pastor's answers into a big-idea + movement structure or
+  into prose; (3) the movement outline itself. New `POST /api/craft/assist` (sign-in-gated, streamed,
+  per-user model + usage logging) and a `draft` JSON column on `sermons` (save/reopen via My Sermons).
+  Auto-pulls the latest research; bilingual (Spanish coaching + book names).
+
 ## v0.18 — Localized Bible book names in Spanish
 
 - In Spanish mode the book picker now shows Spanish names (Numbers → Números, Psalms → Salmos, 1 John → 1 Juan, Song of Solomon → Cantares, …) and the passage reference shown in the loading view, Scripture panel, and completion title is localized too. The `<option>` **value stays English** so the verse APIs and USFM mapping are unaffected — only the display is translated.

@@ -74,6 +74,9 @@
       <button class="tab-btn active" data-tab="research" onclick="switchTab('research')">
         <span class="tab-icon">📖</span> <span data-i18n="tab.research">Research</span>
       </button>
+      <button class="tab-btn" data-tab="craft" id="tab-btn-craft" onclick="switchTab('craft')">
+        <span class="tab-icon">✏️</span> <span data-i18n="tab.craft">Craft</span>
+      </button>
       <button class="tab-btn admin-only" data-tab="write" id="tab-btn-write" onclick="switchTab('write')" style="display:none">
         <span class="tab-icon">✍️</span> <span data-i18n="tab.write">Sermon Draft</span>
       </button>
@@ -295,7 +298,49 @@
       </div>
     </section>
 
-    <!-- ── Write Tab ── -->
+    <!-- ── Craft Tab (collaborative workbench) ── -->
+    <section id="tab-craft" class="tab-panel" style="display:none">
+      <div class="craft-layout" id="craft-layout">
+        <aside class="craft-rail" id="craft-rail">
+          <div class="craft-rail-head">
+            <span data-i18n="craft.researchRail">Research</span>
+            <button class="craft-rail-toggle" onclick="toggleCraftRail()" title="Collapse" aria-label="Collapse">‹</button>
+          </div>
+          <div class="craft-rail-body" id="craft-rail-body">
+            <div class="output-placeholder" data-i18n="craft.noResearch">Run Research first, or start from a blank canvas.</div>
+          </div>
+        </aside>
+        <button class="craft-rail-show" id="craft-rail-show" onclick="toggleCraftRail()" style="display:none" data-i18n="craft.showResearch">Research ›</button>
+
+        <div class="craft-canvas">
+          <div class="craft-head">
+            <input type="text" id="craft-title" data-i18n-ph="craft.titlePh" placeholder="Sermon title (optional)" autocomplete="off" />
+            <div class="craft-passage-ref" id="craft-passage-ref"></div>
+          </div>
+
+          <div class="craft-bigidea">
+            <div class="craft-label-row">
+              <label for="craft-bigidea-input" data-i18n="craft.bigIdea">Big Idea</label>
+              <button class="btn-coach" onclick="openCoach('global')" data-i18n="craft.helpThink">✦ Help me think</button>
+            </div>
+            <textarea id="craft-bigidea-input" rows="2" data-i18n-ph="craft.bigIdeaPh" placeholder="The one thing they should walk away with…"></textarea>
+            <div class="craft-coach" id="craft-coach-global" style="display:none"></div>
+            <div class="craft-suggestion" id="craft-sugg-global" style="display:none"></div>
+          </div>
+
+          <div class="craft-movements" id="craft-movements"></div>
+          <button class="btn-add-movement" onclick="addMovement()" data-i18n="craft.addMovement">+ Add a movement</button>
+
+          <div class="craft-footer">
+            <button class="btn-save" onclick="saveCraft()" data-i18n="craft.save">Save to My Sermons</button>
+            <button class="btn-export" onclick="exportCraft('docx')" data-i18n="btn.word">Word</button>
+            <button class="btn-export" onclick="exportCraft('pdf')" data-i18n="btn.pdf">PDF</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Write Tab (admin-only auto-draft) ── -->
     <section id="tab-write" class="tab-panel" style="display:none">
       <div class="panel-grid">
 
@@ -462,6 +507,11 @@
 
   <footer class="site-footer">
     <span data-i18n="footer.text">Sermon Tools &nbsp;·&nbsp; IMB Innovation Team</span>
+    <span class="footer-legal">
+      <a href="/static/terms-of-use.html" target="_blank" rel="noopener" data-i18n="footer.terms">Terms</a>
+      &nbsp;·&nbsp;
+      <a href="/static/privacy-policy.html" target="_blank" rel="noopener" data-i18n="footer.privacy">Privacy</a>
+    </span>
   </footer>
 
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>

@@ -24,15 +24,21 @@ Sign in with Google to reach three tools plus a saved library:
    the MCP server is unavailable the step still runs, ungrounded. When a verbatim provider covers the
    chosen translation, the exact passage text is shown in a **Scripture panel** and fed into the
    prompts so quotations are accurate. Export to Word/PDF, or save to My Sermons.
-2. **Write** — passage plus optional title, congregation context, research notes, target length, and
-   preaching style. The tool builds the outline first, then writes the sermon **section by section**
-   (each section streamed in its own pass, so even a long sermon never hits the output-length ceiling).
-   Export to Word/PDF.
+2. **Craft** — a pastor-driven workbench ("a workshop, not a machine"). The research sits in a
+   collapsible left rail (passage + verbatim Scripture + the 5 steps) beside a canvas where *you*
+   write the **big idea** and add/reorder **movements** in your own words. Three kinds of help, all
+   **suggest-then-approve** (Insert / Replace / Discard — nothing auto-applies): per-movement editor
+   help (draft from notes · illustration · find a verse · tighten · faithful-to-the-text), **coaching**
+   that asks good questions (globally and per-movement) and turns *your* answers into a structure or
+   prose, and the movement outline itself. Auto-pulls your latest research; save/reopen via My Sermons.
 3. **Evaluate** — paste a draft or upload a file (`.txt` / `.docx` / `.pdf`). Get a five-dimension
    theological evaluation (biblical groundedness, doctrinal soundness, Gospel clarity, application,
    overall). Export to Word/PDF.
 
-**My Sermons** — your saved research sessions; click any entry to reload it.
+**Sermon Draft** (admin-only) — the legacy one-shot auto-generator (outline → section-by-section),
+kept as a power tool for designated admins; hidden from regular users in favor of Craft.
+
+**My Sermons** — your saved research sessions and Craft drafts; click any entry to reopen it.
 
 **Settings** (⚙, per account) — preferred language, preferred translation, and default sermon
 length/style. Applied automatically on sign-in.
@@ -107,7 +113,7 @@ DB migrations (new columns, `usage_log`) run idempotently on container boot — 
 
 | File | Purpose |
 |---|---|
-| `main.py` | FastAPI routes — research / write / evaluate / passage / settings / admin / sermon CRUD / export; system prompts; OpenRouter streaming + usage logging |
+| `main.py` | FastAPI routes — research / craft assist / write (admin) / evaluate / passage / settings / admin / sermon CRUD / export; system prompts; OpenRouter streaming + usage logging |
 | `auth.py` | Google OAuth flow, signed session cookies |
 | `db.py` | SQLite schema + helpers; idempotent migrations (`pref_*`, `blocked`, `assigned_model`, `usage_log`) on every boot |
 | `mcp_refs.py` | Study Bible MCP client (HTTP+SSE), per-step tool dispatch, response filter, 30-day cache |
@@ -121,3 +127,4 @@ DB migrations (new columns, `usage_log`) run idempotently on container boot — 
 ## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — release notes per shipped feature
+- Legal: `static/terms-of-use.html` and `static/privacy-policy.html` (linked from the footer; no-warranty)
