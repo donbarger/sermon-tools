@@ -121,7 +121,7 @@ const TRANSLATIONS = {
     'sermons.heading': 'My Sermons',
     'sermons.desc': 'Your saved research sessions. Click any entry to reload the research.',
     'list.loading': 'Loading…',
-    'footer.text': 'Sermon Tools &nbsp;·&nbsp; IMB Innovation Team',
+    'footer.text': 'Sermon Tools · IMB Innovation Team',
     'footer.terms': 'Terms',
     'footer.privacy': 'Privacy',
 
@@ -374,7 +374,7 @@ const TRANSLATIONS = {
     'sermons.heading': 'Mis sermones',
     'sermons.desc': 'Sus sesiones de investigación guardadas. Haga clic en cualquier entrada para volver a cargar la investigación.',
     'list.loading': 'Cargando…',
-    'footer.text': 'Sermon Tools &nbsp;·&nbsp; Equipo de Innovación de la IMB',
+    'footer.text': 'Sermon Tools · Equipo de Innovación de la IMB',
     'footer.terms': 'Términos',
     'footer.privacy': 'Privacidad',
 
