@@ -1993,7 +1993,13 @@ async function saveCraft() {
   try {
     const res = await fetch('/api/sermons', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: craftState.id, title, passage: craftState.passage || '', draft }),
+      body: JSON.stringify({
+        id: craftState.id, title, passage: craftState.passage || '',
+        // Persist the research alongside the draft so reopening restores the rail.
+        research: craftState.research || '',
+        steps: craftState.researchSteps || [],
+        draft,
+      }),
     });
     if (!res.ok) throw new Error();
     const data = await res.json();
