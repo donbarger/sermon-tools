@@ -1853,8 +1853,8 @@ function renderMovements() {
       <textarea class="movement-text" id="mv-text-${i}" rows="5"
                 data-i18n-ph="craft.movementTextPh" placeholder="Write this movement in your words…"
                 oninput="craftState.movements[${i}].text = this.value"></textarea>
-      <button class="btn-coach" onclick="openCoach(${i})" style="margin-top:8px">${esc(t('craft.helpThink'))}</button>
       <div class="movement-tools">
+        <button class="btn-coach" onclick="openCoach(${i})">${esc(t('craft.helpThink'))}</button>
         <button onclick="movementAssist(${i}, 'draft')">${esc(t('craft.aDraft'))}</button>
         <button onclick="movementAssist(${i}, 'illustrate')">${esc(t('craft.aIllustrate'))}</button>
         <button onclick="movementAssist(${i}, 'cross_ref')">${esc(t('craft.aCrossRef'))}</button>
