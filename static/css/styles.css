@@ -343,7 +343,7 @@ body {
 /* ── Craft workbench ─────────────────────────────────────────────────────────── */
 .craft-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
   /* Break out of the 1200px centered .main-content to use the full screen width. */
@@ -360,7 +360,9 @@ body {
   border-radius: var(--radius);
   max-height: calc(100vh - 110px);
   overflow-y: auto;
+  min-width: 0;   /* allow the column to shrink to its 50% track */
 }
+.craft-rail .prose { overflow-wrap: anywhere; }   /* long words/refs can't force the column wider */
 .craft-rail-head {
   display: flex;
   justify-content: space-between;
