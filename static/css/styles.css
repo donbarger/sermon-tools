@@ -346,6 +346,11 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   align-items: start;
+  /* Break out of the 1200px centered .main-content to use the full screen width. */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding: 0 32px;
+  box-sizing: border-box;
 }
 .craft-rail {
   position: sticky;
@@ -454,7 +459,7 @@ body {
 .craft-footer { display: flex; gap: 8px; margin-top: 1.5rem; flex-wrap: wrap; }
 
 @media (max-width: 768px) {
-  .craft-layout { grid-template-columns: 1fr; }
+  .craft-layout { grid-template-columns: 1fr; padding: 0 16px; }
   .craft-rail { position: static; max-height: none; }
 }
 
