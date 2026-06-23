@@ -152,11 +152,13 @@ const TRANSLATIONS = {
     'craft.bigIdea': 'Big Idea',
     'craft.bigIdeaPh': 'The one thing they should walk away with…',
     'craft.helpThink': '✦ Help me think',
-    'craft.addMovement': '+ Add a movement',
+    'craft.addPoint': '+ Add a point',
+    'craft.introTitle': 'Introduction',
+    'craft.conclusionTitle': 'Conclusion',
     'craft.save': 'Save to My Sermons',
-    'craft.empty': 'No movements yet. Add one, or use “Help me think” to draft a structure from your ideas.',
-    'craft.movementTitlePh': 'Movement / point…',
-    'craft.movementTextPh': 'Write this movement in your words…',
+    'craft.empty': 'No points yet. Add one, or use “Help me think” to draft a structure from your ideas.',
+    'craft.pointTitlePh': 'Point / heading…',
+    'craft.movementTextPh': 'Write in your words…',
     'craft.aDraft': '✦ Draft from my notes',
     'craft.aIllustrate': 'Illustration',
     'craft.aCrossRef': 'Find a verse',
@@ -408,11 +410,13 @@ const TRANSLATIONS = {
     'craft.bigIdea': 'Idea central',
     'craft.bigIdeaPh': 'Lo único que deben recordar al salir…',
     'craft.helpThink': '✦ Ayúdame a pensar',
-    'craft.addMovement': '+ Agregar un movimiento',
+    'craft.addPoint': '+ Agregar un punto',
+    'craft.introTitle': 'Introducción',
+    'craft.conclusionTitle': 'Conclusión',
     'craft.save': 'Guardar en Mis sermones',
-    'craft.empty': 'Aún no hay movimientos. Agregue uno o use «Ayúdame a pensar» para bosquejar una estructura a partir de sus ideas.',
-    'craft.movementTitlePh': 'Movimiento / punto…',
-    'craft.movementTextPh': 'Escriba este movimiento con sus palabras…',
+    'craft.empty': 'Aún no hay puntos. Agregue uno o use «Ayúdame a pensar» para bosquejar una estructura a partir de sus ideas.',
+    'craft.pointTitlePh': 'Punto / encabezado…',
+    'craft.movementTextPh': 'Escriba con sus palabras…',
     'craft.aDraft': '✦ Redactar desde mis notas',
     'craft.aIllustrate': 'Ilustración',
     'craft.aCrossRef': 'Buscar un versículo',
@@ -1367,7 +1371,9 @@ async function loadSavedSermon(id) {
       craftState.title = d.title || sermon.title || '';
       craftState.passage = sermon.passage || '';
       craftState.bigIdea = d.big_idea || '';
-      craftState.movements = Array.isArray(d.movements) ? d.movements : [];
+      craftState.intro = d.intro || '';
+      craftState.points = Array.isArray(d.points) ? d.points : (Array.isArray(d.movements) ? d.movements : []);
+      craftState.conclusion = d.conclusion || '';
       craftState.research = sermon.research || '';
       craftState.researchSteps = JSON.parse(sermon.steps || '[]');
       craftState.passageData = null;
@@ -1719,13 +1725,15 @@ async function doEvaluate() {
 
 const craftState = {
   id: null, title: '', passage: '', passageData: null,
-  research: '', researchSteps: [], bigIdea: '', movements: [],
+  research: '', researchSteps: [], bigIdea: '',
+  intro: '', points: [], conclusion: '',
 };
 const craftSugg = {};  // target -> { raw, action }
 
 function loadCraft() {
   // On first open of an empty canvas, pull the most recent research.
-  if (!craftState.passage && !craftState.movements.length && typeof researchState !== 'undefined' && researchState.passage) {
+  if (!craftState.passage && !craftState.points.length && !craftState.intro && !craftState.conclusion
+      && typeof researchState !== 'undefined' && researchState.passage) {
     craftState.passage = researchState.passage;
     craftState.passageData = researchState.passageData || null;
     craftState.research = researchState.compiled || '';
@@ -1735,7 +1743,24 @@ function loadCraft() {
   document.getElementById('craft-title').value = craftState.title || '';
   document.getElementById('craft-bigidea-input').value = craftState.bigIdea || '';
   document.getElementById('craft-passage-ref').textContent = craftState.passage ? localizePassage(craftState.passage) : '';
-  renderMovements();
+  renderCanvasBlocks();
+}
+
+// Per-block accessors — a block key is 'intro', 'conclusion', or a point index (as a string).
+function _blockTitle(key) {
+  if (key === 'intro') return t('craft.introTitle');
+  if (key === 'conclusion') return t('craft.conclusionTitle');
+  return (craftState.points[Number(key)] || {}).title || '';
+}
+function _blockText(key) {
+  if (key === 'intro') return craftState.intro;
+  if (key === 'conclusion') return craftState.conclusion;
+  return (craftState.points[Number(key)] || {}).text || '';
+}
+function _setBlockText(key, val) {
+  if (key === 'intro') craftState.intro = val;
+  else if (key === 'conclusion') craftState.conclusion = val;
+  else if (craftState.points[Number(key)]) craftState.points[Number(key)].text = val;
 }
 
 function renderCraftRail() {
@@ -1831,62 +1856,74 @@ async function craftAddResearch() {
   if (full) craftState.researchSteps.unshift({ title: q, content: full });
 }
 
-function renderMovements() {
-  const wrap = document.getElementById('craft-movements');
-  if (!craftState.movements.length) {
-    wrap.innerHTML = `<div class="craft-empty">${esc(t('craft.empty'))}</div>`;
-    return;
-  }
-  wrap.innerHTML = craftState.movements.map((m, i) => `
-    <div class="movement" id="mv-${i}">
-      <div class="movement-head">
-        <span class="movement-num">${i + 1}</span>
-        <input class="movement-title" id="mv-title-${i}" value="${esc(m.title || '')}"
-               data-i18n-ph="craft.movementTitlePh" placeholder="Movement / point…"
-               oninput="craftState.movements[${i}].title = this.value" />
-        <div class="movement-controls">
-          <button onclick="moveMovement(${i}, -1)" title="Up" aria-label="Up">↑</button>
-          <button onclick="moveMovement(${i}, 1)" title="Down" aria-label="Down">↓</button>
-          <button onclick="deleteMovement(${i})" title="Delete" aria-label="Delete">✕</button>
-        </div>
-      </div>
-      <textarea class="movement-text" id="mv-text-${i}" rows="5"
-                data-i18n-ph="craft.movementTextPh" placeholder="Write this movement in your words…"
-                oninput="craftState.movements[${i}].text = this.value"></textarea>
+// A canvas block: 'intro'/'conclusion' (fixed title) or a point (editable title + controls).
+function _blockHtml(key, { point = false, index = 0 } = {}) {
+  const head = point
+    ? `<span class="movement-num">${index + 1}</span>
+       <input class="movement-title" id="mv-title-${key}" value="${esc(craftState.points[index].title || '')}"
+              data-i18n-ph="craft.pointTitlePh" placeholder="Point / heading…"
+              oninput="craftState.points[${index}].title = this.value" />
+       <div class="movement-controls">
+         <button onclick="movePoint(${index}, -1)" title="Up" aria-label="Up">↑</button>
+         <button onclick="movePoint(${index}, 1)" title="Down" aria-label="Down">↓</button>
+         <button onclick="deletePoint(${index})" title="Delete" aria-label="Delete">✕</button>
+       </div>`
+    : `<span class="movement-fixed-title">${esc(_blockTitle(key))}</span>`;
+  return `<div class="movement" id="mv-${key}">
+      <div class="movement-head">${head}</div>
+      <textarea class="movement-text" id="mv-text-${key}" rows="5"
+                data-i18n-ph="craft.movementTextPh" placeholder="Write in your words…"
+                oninput="_setBlockText('${key}', this.value)"></textarea>
       <div class="movement-tools">
-        <button class="btn-coach" onclick="openCoach(${i})">${esc(t('craft.helpThink'))}</button>
-        <button onclick="movementAssist(${i}, 'draft')">${esc(t('craft.aDraft'))}</button>
-        <button onclick="movementAssist(${i}, 'illustrate')">${esc(t('craft.aIllustrate'))}</button>
-        <button onclick="movementAssist(${i}, 'cross_ref')">${esc(t('craft.aCrossRef'))}</button>
-        <button onclick="movementAssist(${i}, 'tighten')">${esc(t('craft.aTighten'))}</button>
-        <button onclick="movementAssist(${i}, 'faithful')">${esc(t('craft.aFaithful'))}</button>
+        <button class="btn-coach" onclick="openCoach('${key}')">${esc(t('craft.helpThink'))}</button>
+        <button onclick="blockAssist('${key}', 'draft')">${esc(t('craft.aDraft'))}</button>
+        <button onclick="blockAssist('${key}', 'illustrate')">${esc(t('craft.aIllustrate'))}</button>
+        <button onclick="blockAssist('${key}', 'cross_ref')">${esc(t('craft.aCrossRef'))}</button>
+        <button onclick="blockAssist('${key}', 'tighten')">${esc(t('craft.aTighten'))}</button>
+        <button onclick="blockAssist('${key}', 'faithful')">${esc(t('craft.aFaithful'))}</button>
       </div>
-      <div class="craft-coach" id="coach-${i}" style="display:none"></div>
-      <div class="craft-suggestion" id="sugg-${i}" style="display:none"></div>
-    </div>`).join('');
-  // set textarea values (can't put multiline in attribute reliably)
-  craftState.movements.forEach((m, i) => {
-    const ta = document.getElementById(`mv-text-${i}`);
-    if (ta) ta.value = m.text || '';
-  });
-  // apply placeholders for the freshly built nodes
-  wrap.querySelectorAll('[data-i18n-ph]').forEach(el => el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))));
+      <div class="craft-coach" id="coach-${key}" style="display:none"></div>
+      <div class="craft-suggestion" id="sugg-${key}" style="display:none"></div>
+    </div>`;
 }
 
-function addMovement() {
-  craftState.movements.push({ title: '', text: '' });
-  renderMovements();
+function _syncBlockTextareas() {
+  const set = (key, val) => { const ta = document.getElementById('mv-text-' + key); if (ta) ta.value = val || ''; };
+  set('intro', craftState.intro);
+  craftState.points.forEach((p, i) => set(String(i), p.text));
+  set('conclusion', craftState.conclusion);
+  document.querySelectorAll('#tab-craft [data-i18n-ph]').forEach(el => el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))));
 }
-function deleteMovement(i) {
-  craftState.movements.splice(i, 1);
-  renderMovements();
+
+function renderCanvasBlocks() {
+  document.getElementById('craft-intro').innerHTML = _blockHtml('intro');
+  renderPoints();
+  document.getElementById('craft-conclusion').innerHTML = _blockHtml('conclusion');
+  _syncBlockTextareas();
 }
-function moveMovement(i, dir) {
+
+function renderPoints() {
+  const wrap = document.getElementById('craft-points');
+  wrap.innerHTML = craftState.points.length
+    ? craftState.points.map((p, i) => _blockHtml(String(i), { point: true, index: i })).join('')
+    : `<div class="craft-empty">${esc(t('craft.empty'))}</div>`;
+  _syncBlockTextareas();
+}
+
+function addPoint() {
+  craftState.points.push({ title: '', text: '' });
+  renderPoints();
+}
+function deletePoint(i) {
+  craftState.points.splice(i, 1);
+  renderPoints();
+}
+function movePoint(i, dir) {
   const j = i + dir;
-  if (j < 0 || j >= craftState.movements.length) return;
-  const a = craftState.movements;
+  if (j < 0 || j >= craftState.points.length) return;
+  const a = craftState.points;
   [a[i], a[j]] = [a[j], a[i]];
-  renderMovements();
+  renderPoints();
 }
 
 function toggleCraftRail() {
@@ -1924,22 +1961,18 @@ function submitCoach(target) {
   const ans = (document.getElementById(`coach-ans-${target}`) || {}).value || '';
   if (!ans.trim()) { showToast(t('craft.coachEmpty'), 'error'); return; }
   if (target === 'global') craftAssist('global', 'structure', { answers: ans });
-  else {
-    const i = Number(target);
-    craftAssist(i, 'weave', { answers: ans, movement_title: craftState.movements[i].title, movement_text: craftState.movements[i].text });
-  }
+  else craftAssist(target, 'weave', { answers: ans, movement_title: _blockTitle(target), movement_text: _blockText(target) });
 }
 
-// ── Movement assists + suggestion box (suggest → approve) ──────────────────────
+// ── Block assists + suggestion box (suggest → approve) ─────────────────────────
 
-function movementAssist(i, action) {
-  const m = craftState.movements[i];
-  const ta = document.getElementById(`mv-text-${i}`);
+function blockAssist(key, action) {
+  const ta = document.getElementById(`mv-text-${key}`);
   let selection = '';
   if (ta && ta.selectionStart != null && ta.selectionEnd > ta.selectionStart) {
     selection = ta.value.slice(ta.selectionStart, ta.selectionEnd);
   }
-  craftAssist(i, action, { movement_title: m.title, movement_text: m.text, selection });
+  craftAssist(key, action, { movement_title: _blockTitle(key), movement_text: _blockText(key), selection });
 }
 
 async function craftAssist(target, action, extra) {
@@ -2015,8 +2048,7 @@ function discardSugg(target) {
 function applySugg(target, mode) {
   const s = craftSugg[target];
   if (!s) return;
-  const i = Number(target);
-  const ta = document.getElementById(`mv-text-${i}`);
+  const ta = document.getElementById(`mv-text-${target}`);
   if (!ta) return;
   if (mode === 'replace' && ta.selectionEnd > ta.selectionStart) {
     ta.value = ta.value.slice(0, ta.selectionStart) + s.raw + ta.value.slice(ta.selectionEnd);
@@ -2025,7 +2057,7 @@ function applySugg(target, mode) {
   } else {  // insert / append
     ta.value = (ta.value ? ta.value.trimEnd() + '\n\n' : '') + s.raw;
   }
-  craftState.movements[i].text = ta.value;
+  _setBlockText(target, ta.value);
   discardSugg(target);
 }
 
@@ -2042,9 +2074,9 @@ function applyStructure(target) {
       continue;
     }
     const item = line.match(/^\d+[.)]\s*(.+)/);
-    if (item) craftState.movements.push({ title: item[1].replace(/\*\*/g, '').trim(), text: '' });
+    if (item) craftState.points.push({ title: item[1].replace(/\*\*/g, '').trim(), text: '' });
   }
-  renderMovements();
+  renderPoints();
   discardSugg(target);
   closeCoach('global');
   showToast(t('craft.structureApplied'), 'success');
@@ -2056,7 +2088,9 @@ function _craftDraft() {
   return {
     title: (document.getElementById('craft-title') || {}).value || '',
     big_idea: (document.getElementById('craft-bigidea-input') || {}).value || '',
-    movements: craftState.movements.map(m => ({ title: m.title || '', text: m.text || '' })),
+    intro: craftState.intro || '',
+    points: craftState.points.map(p => ({ title: p.title || '', text: p.text || '' })),
+    conclusion: craftState.conclusion || '',
   };
 }
 
@@ -2087,7 +2121,9 @@ function _craftMarkdown() {
   let md = `# ${d.title || localizePassage(craftState.passage) || ''}\n\n`;
   if (craftState.passage) md += `_${localizePassage(craftState.passage)}_\n\n`;
   if (d.big_idea) md += `**${t('craft.bigIdea')}:** ${d.big_idea}\n\n`;
-  d.movements.forEach(m => { md += `## ${m.title || ''}\n\n${m.text || ''}\n\n`; });
+  if (d.intro) md += `## ${t('craft.introTitle')}\n\n${d.intro}\n\n`;
+  d.points.forEach(p => { md += `## ${p.title || ''}\n\n${p.text || ''}\n\n`; });
+  if (d.conclusion) md += `## ${t('craft.conclusionTitle')}\n\n${d.conclusion}\n\n`;
   return md;
 }
 
