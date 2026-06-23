@@ -143,7 +143,10 @@ const TRANSLATIONS = {
 
     'tab.craft': 'Craft',
     'craft.researchRail': 'Research',
-    'craft.noResearch': 'Run Research first, or start from a blank canvas.',
+    'craft.addResearch': '✦ Add research',
+    'craft.addResearchPh': 'Research a question or another passage…',
+    'craft.addResearchEmpty': 'Type a question or passage to research.',
+    'craft.noResearch': 'Run Research first, add research here, or start from a blank canvas.',
     'craft.showResearch': 'Research ›',
     'craft.titlePh': 'Sermon title (optional)',
     'craft.bigIdea': 'Big Idea',
@@ -396,7 +399,10 @@ const TRANSLATIONS = {
 
     'tab.craft': 'Taller',
     'craft.researchRail': 'Investigación',
-    'craft.noResearch': 'Haga primero la Investigación, o comience con un lienzo en blanco.',
+    'craft.addResearch': '✦ Agregar investigación',
+    'craft.addResearchPh': 'Investigue una pregunta u otro pasaje…',
+    'craft.addResearchEmpty': 'Escriba una pregunta o un pasaje para investigar.',
+    'craft.noResearch': 'Haga primero la Investigación, agregue investigación aquí, o comience con un lienzo en blanco.',
     'craft.showResearch': 'Investigación ›',
     'craft.titlePh': 'Título del sermón (opcional)',
     'craft.bigIdea': 'Idea central',
@@ -1734,27 +1740,95 @@ function loadCraft() {
 
 function renderCraftRail() {
   const body = document.getElementById('craft-rail-body');
-  let html = '';
+  // "Add research" form — always available so the pastor can research more in place.
+  let html = `<div class="rail-add">
+    <input type="text" id="craft-add-research-input" data-i18n-ph="craft.addResearchPh"
+           placeholder="Research a question or another passage…"
+           onkeydown="if(event.key==='Enter')craftAddResearch()" />
+    <button class="btn-coach" onclick="craftAddResearch()" data-i18n="craft.addResearch">✦ Add research</button>
+  </div>`;
+
+  let items = '';
   if (craftState.passage) {
-    html += `<div class="rail-passage"><div class="rail-ref">${esc(localizePassage(craftState.passage))}</div>`;
+    items += `<div class="rail-passage"><div class="rail-ref">${esc(localizePassage(craftState.passage))}</div>`;
     if (craftState.passageData && craftState.passageData.text) {
-      html += `<div class="rail-scripture">${esc(craftState.passageData.text)}</div>
+      items += `<div class="rail-scripture">${esc(craftState.passageData.text)}</div>
                <div class="rail-attr">${esc(craftState.passageData.attribution || '')}</div>`;
     }
-    html += `</div>`;
+    items += `</div>`;
   }
   const steps = craftState.researchSteps || [];
   if (steps.length) {
-    html += steps.map(s => `
+    items += steps.map(s => `
       <details class="rail-step">
         <summary>${esc(s.title || '')}</summary>
         <div class="prose">${renderMarkdown(s.content || '')}</div>
       </details>`).join('');
   } else if (craftState.research) {
-    html += `<details class="rail-step" open><summary>${esc(t('craft.researchRail'))}</summary><div class="prose">${renderMarkdown(craftState.research)}</div></details>`;
+    items += `<details class="rail-step" open><summary>${esc(t('craft.researchRail'))}</summary><div class="prose">${renderMarkdown(craftState.research)}</div></details>`;
   }
-  if (!html) html = `<div class="output-placeholder">${esc(t('craft.noResearch'))}</div>`;
+  if (!items) items = `<div class="output-placeholder">${esc(t('craft.noResearch'))}</div>`;
+
+  html += `<div id="craft-rail-items">${items}</div>`;
   body.innerHTML = html;
+  body.querySelectorAll('[data-i18n-ph]').forEach(el => el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))));
+}
+
+let _addResCount = 0;
+async function craftAddResearch() {
+  const inp = document.getElementById('craft-add-research-input');
+  const q = (inp && inp.value || '').trim();
+  if (!q) { showToast(t('craft.addResearchEmpty'), 'error'); return; }
+  if (inp) inp.value = '';
+  const id = 'addres-' + (_addResCount++);
+  const list = document.getElementById('craft-rail-items');
+  const det = document.createElement('details');
+  det.className = 'rail-step';
+  det.open = true;
+  det.innerHTML = `<summary>${esc(q)}</summary><div class="prose" id="${id}"><div class="streaming-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  // drop the "no research yet" placeholder if present
+  const ph = list.querySelector('.output-placeholder');
+  if (ph) ph.remove();
+  list.insertBefore(det, list.firstChild);
+  const bodyEl = document.getElementById(id);
+
+  let full = '';
+  try {
+    const res = await fetch('/api/craft/assist', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'research', lang: currentLang,
+        passage: craftState.passage || null,
+        big_idea: (document.getElementById('craft-bigidea-input') || {}).value || null,
+        query: q,
+      }),
+    });
+    if (!res.ok) { let d = {}; try { d = await res.json(); } catch {} throw new Error(d.detail || t('err.requestFailed')); }
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const p = JSON.parse(data);
+          if (p.error) { bodyEl.innerHTML = `<div class="error-msg">${esc(p.error)}</div>`; return; }
+          if (p.text) { full += p.text; bodyEl.innerHTML = renderMarkdown(full); }
+        } catch {}
+      }
+    }
+  } catch (err) {
+    bodyEl.innerHTML = `<div class="error-msg">${esc(err.message)}</div>`;
+    return;
+  }
+  // Persist with the draft so it's there on reopen.
+  if (full) craftState.researchSteps.unshift({ title: q, content: full });
 }
 
 function renderMovements() {

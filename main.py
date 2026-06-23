@@ -698,6 +698,7 @@ CRAFT_ACTIONS = {
     "rephrase": ("Rephrase the text provided below in a fresh way while keeping its meaning and the pastor's voice. Return ONLY the revised text.", 1000),
     "expand": ("Expand the text/point provided below into fuller preachable prose, staying on the pastor's line of thought. Return ONLY the expanded text.", 1400),
     "faithful": ("Review the text provided below against the passage. Note — as brief, pastoral bullet points — anything that overreaches the text, misreads it, or could be tightened to stay faithful. If it is sound, say so and note one strength.", 700),
+    "research": ("The pastor needs ADDITIONAL research while preparing this sermon. Research the question, topic, or passage given below, in the context of the sermon's main passage. Provide thorough but focused, evangelical, Scripture-grounded study material — historical/cultural background, key original-language terms, cross-references, and theological insight as relevant to what was asked. Use clear markdown headings. This is study material to inform the pastor — do NOT write the sermon.", 2400),
 }
 
 
@@ -713,6 +714,7 @@ class CraftAssistRequest(BaseModel):
     movement_text: Optional[str] = None
     selection: Optional[str] = None
     answers: Optional[str] = None
+    query: Optional[str] = None
 
 
 @app.post("/api/craft/assist")
@@ -738,6 +740,8 @@ async def craft_assist(request: CraftAssistRequest, http: Request):
         msg += f"\nThe pastor's notes/text for this movement:\n{request.movement_text}\n"
     if request.selection:
         msg += f"\nThe specific text to work on:\n{request.selection}\n"
+    if request.query:
+        msg += f"\nThe pastor's research request: {request.query}\n"
     if request.answers:
         msg += f"\nThe pastor's answers to coaching questions:\n{request.answers}\n"
     if request.research:

@@ -376,6 +376,9 @@ body {
 }
 .craft-rail-toggle { background: none; border: none; cursor: pointer; font-size: 1.1rem; color: var(--muted); }
 .craft-rail-body { padding: 12px; }
+.rail-add { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.rail-add input { width: 100%; padding: 7px 9px; border: 1.5px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+.rail-add .btn-coach { align-self: flex-start; }
 .craft-rail-show {
   align-self: start;
   background: var(--surface);
